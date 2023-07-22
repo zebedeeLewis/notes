@@ -15,7 +15,10 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@notes/utils/test": ["libs/utils/test/src/index.ts"]
+      "@notes/utils/test": ["libs/utils/test/src/index.ts"],
+      "@notes/domain/shared/immutable-model": [
+        "libs/domain/shared/immutable-model/src/index.ts"
+      ]
     }
   },
   "exclude": ["node_modules", "tmp"]
