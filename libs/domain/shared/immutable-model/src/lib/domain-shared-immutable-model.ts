@@ -6,18 +6,16 @@ export interface TaggedObj<T extends string>
 export type TaggedModel<T extends string, P extends TaggedObj<T>>
   = RecordOf<P>
 
+/**
+ * Create an Immutable Record where the descriptive name is
+ * set to the value of the records "_tag" property.
+ */
 type factory
   =  <T extends string, P extends TaggedObj<T>>(d: P)
   => (i: Partial<P>)
   => TaggedModel<T, P>
 export const factory: factory
   = d => Record(d, d._tag)
-
-type getTag
-  =  <T extends string, P extends TaggedObj<T>>(r: TaggedModel<T, P>)
-  => T
-export const getTag: getTag
-  = r => r._tag
 
 type get
   =  < T extends string
