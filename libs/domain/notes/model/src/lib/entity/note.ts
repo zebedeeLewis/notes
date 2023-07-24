@@ -1,38 +1,38 @@
-import { SharedValueObject } from '@shared-value-object'
 import { ImmutableModel } from '@notes/domain/shared/immutable-model'
+import { Str, Time, Bool, Id } from '@notes/domain/shared/value-object'
+import {AccessControlList} from './access-control-list'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
-import Str = SharedValueObject.Str
-import Time = SharedValueObject.Time
-import Bool = SharedValueObject.Bool
-import Id = SharedValueObject.Id
-import AccessControlList = SharedValueObject.AccessControlList
 
-export interface NoteEntityI
-  { _tag: 'NoteEntity'
-  , content: Str.Value
-  , isImportant: Bool.Value
-  , creation_time: Time.Value
-  , owner: Id.Value
-  , acl: AccessControlList.Value
-  , }
-
-export type NoteEntity
-  = TaggedModel<'NoteEntity', NoteEntityI>
-
-export const DEFAULT_ENTITY_VALUE: NoteEntityI
-  = { _tag: 'NoteEntity'
-    , content: Str.__unsafe_of('default content')
-    , isImportant: Bool.__unsafe_of(false)
-    , creation_time: Time.__unsafe_of(new Date())
-    , owner: Id.__unsafe_of('3b241101-e2bb-4255-8caf-4136c566a962')
-    , acl: AccessControlList.__unsafe_of()
+export module Note {
+  export interface EntityI
+    { _tag: 'NoteEntity'
+    , id: Id.Value
+    , content: Str.Value
+    , isImportant: Bool.Value
+    , creation_time: Time.Value
+    , owner: Id.Value
+    , access_control_list: AccessControlList.Entity
     , }
-
-type __unsafe_of
-  = (m: Partial<NoteEntityI>)
-  => NoteEntity
-export const __unsafe_of: __unsafe_of
-  = factory<'NoteEntity', NoteEntityI>(
-    DEFAULT_ENTITY_VALUE )
+  
+  export type Entity
+    = TaggedModel<'NoteEntity', EntityI>
+  
+  export const DEFAULT_ENTITY_VALUE: EntityI
+    = { _tag: 'NoteEntity'
+      , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
+      , content: Str.__unsafe_of('default content')
+      , isImportant: Bool.__unsafe_of(false)
+      , creation_time: Time.__unsafe_of(new Date())
+      , owner: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
+      , access_control_list: AccessControlList.__unsafe_of({})
+      , }
+  
+  type __unsafe_of
+    = (m: Partial<EntityI>)
+    => Entity
+  export const __unsafe_of: __unsafe_of
+    = factory<'NoteEntity', EntityI>(
+      DEFAULT_ENTITY_VALUE )
+}

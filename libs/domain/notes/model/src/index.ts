@@ -1,1 +1,1 @@
-export * from './lib/domain-notes--model';
+export  {Entity} from './lib/entity'
