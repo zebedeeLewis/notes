@@ -12,7 +12,7 @@ export module AccessControl {
   type AccessControlValue = [Id.Value, Id.Value, Permission.Value]
 
   export interface ValueI
-    { _tag: 'AccessControlValue'
+    { [ImmutableModel.Tag]: 'AccessControlValue'
     , _value: AccessControlValue
     , }
   
@@ -20,7 +20,7 @@ export module AccessControl {
     = TaggedModel<'AccessControlValue', ValueI>
   
   export const DEFAULT: ValueI
-    = { _tag: 'AccessControlValue'
+    = { [ImmutableModel.Tag]: 'AccessControlValue'
       , _value:
         [ Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
         , Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')

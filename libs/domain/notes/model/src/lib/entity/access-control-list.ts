@@ -6,7 +6,7 @@ import factory = ImmutableModel.factory
 
 export module AccessControlListEntity {
   export interface ModelI
-    { _tag: 'AccessControlListEntity'
+    { [ImmutableModel.Tag]: 'AccessControlListEntity'
     , id: Id.Value
     , list: Array<AccessControl.Value>
     , }
@@ -15,7 +15,7 @@ export module AccessControlListEntity {
     = TaggedModel<'AccessControlListEntity', ModelI>
   
   export const DEFAULT_VALUE: ModelI
-    = { _tag: 'AccessControlListEntity'
+    = { [ImmutableModel.Tag]: 'AccessControlListEntity'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , list: []
       , }

@@ -1,7 +1,10 @@
 import { RecordOf, Record } from 'immutable'
 
+export const Tag = '_tag' as const
+export type Tag = typeof Tag
+
 export interface TaggedObj<T extends string>
-  { _tag: T }
+  { [Tag]: T }
 
 export type TaggedModel<T extends string, P extends TaggedObj<T>>
   = RecordOf<P>
@@ -15,7 +18,7 @@ type factory
   => (i: Partial<P>)
   => TaggedModel<T, P>
 export const factory: factory
-  = d => Record(d, d._tag)
+  = d => Record(d, d[Tag])
 
 type get
   =  < T extends string

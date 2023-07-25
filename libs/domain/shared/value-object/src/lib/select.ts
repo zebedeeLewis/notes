@@ -4,7 +4,7 @@ import factory = ImmutableModel.factory
 
 export module Select {
   export interface OptionsI<V>
-    { _tag: 'SelectOptions'
+    { [ImmutableModel.Tag]: 'SelectOptions'
     , _value: V
     , }
   
@@ -12,7 +12,7 @@ export module Select {
     = TaggedModel<'SelectOptions', OptionsI<V>>
   
   export const DEFAULT: OptionsI<any>
-    = { _tag: 'SelectOptions'
+    = { [ImmutableModel.Tag]: 'SelectOptions'
       , _value: 'select option'
       , }
   

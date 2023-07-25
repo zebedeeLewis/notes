@@ -10,7 +10,7 @@ export module CreateNoteFailedEvent {
     | 'UnauthorizedAction'
 
   interface ModelI
-    { _tag: 'CreateNoteFailedEvent'
+    { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
     , id: Id.Value
     , command: Id.Value
     , reason: Select.Options<Reason>
@@ -21,7 +21,7 @@ export module CreateNoteFailedEvent {
     = TaggedModel<'CreateNoteFailedEvent', ModelI>
   
   const DEFAULT_VALUE: ModelI
-    = { _tag: 'CreateNoteFailedEvent'
+    = { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , command: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , reason: Select.__unsafe_of<Reason>('AuthenticationFailure')

@@ -4,7 +4,7 @@ import factory = ImmutableModel.factory
 
 export module Bool {
   export interface ValueI
-    { _tag: 'BoolValue'
+    { [ImmutableModel.Tag]: 'BoolValue'
     , _value: boolean
     , }
   
@@ -12,7 +12,7 @@ export module Bool {
     = TaggedModel<'BoolValue', ValueI>
   
   export const DEFAULT: ValueI
-    = { _tag: 'BoolValue'
+    = { [ImmutableModel.Tag]: 'BoolValue'
       , _value: false
       , }
   

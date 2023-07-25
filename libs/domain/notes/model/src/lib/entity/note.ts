@@ -7,7 +7,7 @@ import factory = ImmutableModel.factory
 
 export module NoteEntity {
   export interface ModelI
-    { _tag: 'NoteEntity'
+    { [ImmutableModel.Tag]: 'NoteEntity'
     , id: Id.Value
     , content: Str.Value
     , isImportant: Bool.Value
@@ -20,7 +20,7 @@ export module NoteEntity {
     = TaggedModel<'NoteEntity', ModelI>
   
   export const DEFAULT_VALUE: ModelI
-    = { _tag: 'NoteEntity'
+    = { [ImmutableModel.Tag]: 'NoteEntity'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , content: Str.__unsafe_of('default content')
       , isImportant: Bool.__unsafe_of(false)

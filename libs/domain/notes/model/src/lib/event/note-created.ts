@@ -8,7 +8,7 @@ import factory = ImmutableModel.factory
 
 export module NoteCreatedEvent {
   export interface ModelI
-    { _tag: 'NoteCreatedEvent'
+    { [ImmutableModel.Tag]: 'NoteCreatedEvent'
     , id: Id.Value
     , note: NoteEntity.Model
     , event_time: Time.Value
@@ -18,7 +18,7 @@ export module NoteCreatedEvent {
     = TaggedModel<'NoteCreatedEvent', ModelI>
   
   export const DEFAULT_VALUE: ModelI
-    = { _tag: 'NoteCreatedEvent'
+    = { [ImmutableModel.Tag]: 'NoteCreatedEvent'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , note: NoteEntity.__unsafe_of({})
       , event_time: Time.__unsafe_of(new Date())

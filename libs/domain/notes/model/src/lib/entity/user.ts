@@ -6,7 +6,7 @@ import factory = ImmutableModel.factory
 
 export module UserEntity {
   export interface ModelI
-    { _tag: 'UserEntity'
+    { [ImmutableModel.Tag]: 'UserEntity'
     , id: Id.Value
     , name: Str.Value
     , }
@@ -15,7 +15,7 @@ export module UserEntity {
     = TaggedModel<'UserEntity', ModelI>
   
   export const DEFAULT_VALUE: ModelI
-    = { _tag: 'UserEntity'
+    = { [ImmutableModel.Tag]: 'UserEntity'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , name: Str.__unsafe_of('default content')
       , }

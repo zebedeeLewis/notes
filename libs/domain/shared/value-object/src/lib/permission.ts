@@ -10,7 +10,7 @@ export module Permission {
     | 'Execute'
 
   export interface ValueI
-    { _tag: 'PermissionValue'
+    { [ImmutableModel.Tag]: 'PermissionValue'
     , _value: PermissionValue
     , }
   
@@ -18,7 +18,7 @@ export module Permission {
     = TaggedModel<'PermissionValue', ValueI>
   
   export const DEFAULT: ValueI
-    = { _tag: 'PermissionValue'
+    = { [ImmutableModel.Tag]: 'PermissionValue'
       , _value: 'Read'
       , }
   

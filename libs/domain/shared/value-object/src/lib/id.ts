@@ -5,14 +5,14 @@ import factory = ImmutableModel.factory
 
 export module Id {
   export interface ValueI
-    { _tag: 'IdValue'
+    { [ImmutableModel.Tag]: 'IdValue'
     , _value: string
     , }
   
   export type Value = TaggedModel<'IdValue', ValueI>
   
   const DEFAULT: ValueI
-    = { _tag: 'IdValue'
+    = { [ImmutableModel.Tag]: 'IdValue'
       , _value: 'f77d466a-2993-11ee-be56-0242ac120002'
       , }
   

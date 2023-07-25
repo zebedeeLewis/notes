@@ -4,14 +4,14 @@ import factory = ImmutableModel.factory
 
 export module Time {
   export interface ValueI
-    { _tag: 'TimeValue'
+    { [ImmutableModel.Tag]: 'TimeValue'
     , _value: Date
     , }
   
   export type Value = TaggedModel<'TimeValue', ValueI>
   
   const DEFAULT: ValueI
-    = { _tag: 'TimeValue'
+    = { [ImmutableModel.Tag]: 'TimeValue'
       , _value: new Date()
       , }
   
