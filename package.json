@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "fp-ts": "^2.16.0",
+    "morphic-ts": "^0.8.0-rc.2",
     "tslib": "^2.3.0"
   }
 }
