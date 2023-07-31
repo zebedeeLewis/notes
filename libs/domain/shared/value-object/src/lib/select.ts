@@ -9,7 +9,7 @@ export module Select {
     , }
   
   export type Options<V>
-    = TaggedModel<'SelectOptions', OptionsI<V>>
+    = TaggedModel<OptionsI<V>>
   
   export const DEFAULT: OptionsI<any>
     = { [ImmutableModel.Tag]: 'SelectOptions'
@@ -22,6 +22,6 @@ export module Select {
   export const __unsafe_of: __unsafe_of
     = <V>(
       v: unknown
-    ): Options<V> => factory< 'SelectOptions', OptionsI<V>>(DEFAULT)({
+    ): Options<V> => factory<OptionsI<V>>(DEFAULT)({
       _value: v as V })
 }

@@ -5,25 +5,25 @@ import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
 
 export module AccessControlListEntity {
-  export interface ModelI
+  export interface Schema
     { [ImmutableModel.Tag]: 'AccessControlListEntity'
     , id: Id.Value
     , list: Array<AccessControl.Value>
     , }
   
   export type Model
-    = TaggedModel<'AccessControlListEntity', ModelI>
+    = TaggedModel<Schema>
   
-  export const DEFAULT_VALUE: ModelI
+  export const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'AccessControlListEntity'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , list: []
       , }
   
   type __unsafe_of
-    = (m: Partial<ModelI>)
+    = (m: Partial<Schema>)
     => Model
   export const __unsafe_of: __unsafe_of
-    = factory<'AccessControlListEntity', ModelI>(
+    = factory<Schema>(
       DEFAULT_VALUE )
 }

@@ -4,14 +4,14 @@ import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
 
 export module Str {
-  export interface ValueI
+  export interface Schema
     { [ImmutableModel.Tag]: 'StrValue'
     , _value: string
     , }
   
-  export type Value = TaggedModel<'StrValue', ValueI>
+  export type Value = TaggedModel<Schema>
   
-  const DEFAULT: ValueI
+  const DEFAULT: Schema
     = { [ImmutableModel.Tag]: 'StrValue'
       , _value: ''
       , }
@@ -20,6 +20,6 @@ export module Str {
     =  (v: unknown)
     => Value
   export const __unsafe_of: __unsafe_of
-    = v => factory<'StrValue', ValueI>(DEFAULT)({
+    = v => factory<Schema>(DEFAULT)({
       _value: v as string })
 }

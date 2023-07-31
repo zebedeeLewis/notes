@@ -9,7 +9,7 @@ export module CreateNoteFailedEvent {
     = 'AuthenticationFailure'
     | 'UnauthorizedAction'
 
-  interface ModelI
+  interface Schema
     { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
     , id: Id.Value
     , command: Id.Value
@@ -18,9 +18,9 @@ export module CreateNoteFailedEvent {
     , }
   
   export type Model
-    = TaggedModel<'CreateNoteFailedEvent', ModelI>
+    = TaggedModel<Schema>
   
-  const DEFAULT_VALUE: ModelI
+  const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
       , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
       , command: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
@@ -29,9 +29,9 @@ export module CreateNoteFailedEvent {
       , }
   
   type __unsafe_of
-    = (m: Partial<ModelI>)
+    = (m: Partial<Schema>)
     => Model
   export const __unsafe_of: __unsafe_of
-    = factory<'CreateNoteFailedEvent', ModelI>(
+    = factory<Schema>(
       DEFAULT_VALUE )
 }

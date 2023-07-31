@@ -3,37 +3,53 @@ import { RecordOf, Record } from 'immutable'
 export const Tag = '_tag' as const
 export type Tag = typeof Tag
 
-export interface TaggedObj<T extends string>
-  { [Tag]: T }
+export interface Schema
+  { [Tag]: string }
 
-export type TaggedModel<T extends string, P extends TaggedObj<T>>
-  = RecordOf<P>
+export type TaggedModel<S extends Schema>
+  = RecordOf<S>
+
+type TaggedModelSchema<T> = T extends TaggedModel<infer S> ? S : never
+type ModelProps<T> = T extends TaggedModel<infer S> ? keyof S : never
 
 /**
  * Create an Immutable Record where the descriptive name is
  * set to the value of the records "_tag" property.
  */
 type factory
-  =  <T extends string, P extends TaggedObj<T>>(d: P)
-  => (i: Partial<P>)
-  => TaggedModel<T, P>
+  =  <S extends Schema>(d: S)
+  => (i: Partial<S>)
+  => TaggedModel<S>
 export const factory: factory
   = d => Record(d, d[Tag])
 
+/**
+ * A function that gets the value of a given property.
+ *
+ * @returns
+ *   - the value that the given property was set to
+ *   - or a default value if the property was not explicitly
+ *     set.
+ */
 type get
-  =  < T extends string
-     , P extends TaggedObj<T>
-     , K extends keyof P
-     >(k: K)
-  => (m: TaggedModel<T,P>)
-  => P[K]
+  =  <M extends TaggedModel<any>, K extends ModelProps<M>>(k: K)
+  => (m: M)
+  => M[K]
 export const get: get
-  = k => m => m.get(k)
+  = k => m => m[k]
 
-export const set
-  = < T extends string
-    , P extends TaggedObj<T>
-    , K extends keyof P>(k: K) =>
-    (v: P[K]) =>
-    (m: TaggedModel<T,P>): TaggedModel<T,P> => (
-      m.set(k, v))
+/**
+ * A function that sets the value of a given property.
+ *
+ * @returns
+ *   - A copy of the given model, where all property values are
+ *     the same except for the selected property which is set
+ *     to the given value.
+ */
+export type set
+  =  <M extends TaggedModel<any>, K extends ModelProps<M>>(k: K)
+  => (v: TaggedModelSchema<M>[K])
+  => (m: M)
+  => M
+export const set: set
+  = k => v => m => m.set(k, v)

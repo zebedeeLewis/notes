@@ -3,14 +3,14 @@ import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
 
 export module Time {
-  export interface ValueI
+  export interface Schema
     { [ImmutableModel.Tag]: 'TimeValue'
     , _value: Date
     , }
   
-  export type Value = TaggedModel<'TimeValue', ValueI>
+  export type Value = TaggedModel<Schema>
   
-  const DEFAULT: ValueI
+  const DEFAULT: Schema
     = { [ImmutableModel.Tag]: 'TimeValue'
       , _value: new Date()
       , }
@@ -19,6 +19,6 @@ export module Time {
     =  (v: unknown)
     => Value
   export const __unsafe_of: __unsafe_of
-    = v => factory<'TimeValue', ValueI>(DEFAULT)({
+    = v => factory<Schema>(DEFAULT)({
       _value: v as Date })
 }

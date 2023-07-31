@@ -9,15 +9,15 @@ export module Permission {
     | 'Write'
     | 'Execute'
 
-  export interface ValueI
+  export interface Schema
     { [ImmutableModel.Tag]: 'PermissionValue'
     , _value: PermissionValue
     , }
   
   export type Value
-    = TaggedModel<'PermissionValue', ValueI>
+    = TaggedModel<Schema>
   
-  export const DEFAULT: ValueI
+  export const DEFAULT: Schema
     = { [ImmutableModel.Tag]: 'PermissionValue'
       , _value: 'Read'
       , }
@@ -26,7 +26,7 @@ export module Permission {
     =  (v: unknown)
     => Value
   const __unsafe_of: __unsafe_of
-    = v => factory< 'PermissionValue', ValueI>(DEFAULT)({
+    = v => factory<Schema>(DEFAULT)({
       _value: v as PermissionValue })
 
   export const READ = __unsafe_of('Read')

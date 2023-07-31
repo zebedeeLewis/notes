@@ -11,15 +11,15 @@ import factory = ImmutableModel.factory
 export module AccessControl {
   type AccessControlValue = [Id.Value, Id.Value, Permission.Value]
 
-  export interface ValueI
+  export interface Schema
     { [ImmutableModel.Tag]: 'AccessControlValue'
     , _value: AccessControlValue
     , }
   
   export type Value
-    = TaggedModel<'AccessControlValue', ValueI>
+    = TaggedModel<Schema>
   
-  export const DEFAULT: ValueI
+  export const DEFAULT: Schema
     = { [ImmutableModel.Tag]: 'AccessControlValue'
       , _value:
         [ Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
@@ -32,7 +32,7 @@ export module AccessControl {
     =  (v: unknown)
     => Value
   export const __unsafe_of: __unsafe_of
-    = v => factory< 'AccessControlValue', ValueI>(DEFAULT)({
+    = v => factory<Schema>(DEFAULT)({
       _value: v as AccessControlValue })
 
   type getUserId
