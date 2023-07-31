@@ -1,4 +1,4 @@
-import * as _mod from './lib/domain-shared-immutable-model'
+import * as _mod from './lib/utils--immutable-model'
 
 export module ImmutableModel {
   export type Tag = _mod.Tag

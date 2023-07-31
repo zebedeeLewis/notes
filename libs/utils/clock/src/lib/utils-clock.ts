@@ -9,7 +9,7 @@
  * you want it to be, making the time a controlled variable without the
  * need for any special "mocking" capability from the test runner.
  */
-import { ImmutableModel } from '@notes/domain/shared/immutable-model'
+import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Either, tryCatch } from 'fp-ts/lib/Either'
 
 import TaggedModel = ImmutableModel.TaggedModel
@@ -24,18 +24,17 @@ export type clock
 export const clock: clock
   = () => new Date()
 
-interface ClockErrorI { [ImmutableModel.Tag]: 'ClockError' }
+interface ClockErrorSchema { [ImmutableModel.Tag]: 'ClockError' }
 
 export type ClockError
-  = TaggedModel<'ClockError', ClockErrorI>
+  = TaggedModel<ClockErrorSchema>
 
 type clockError
   =  ()
   => ClockError
 export const clockError: clockError
   = () => factory<
-      'ClockError',
-      ClockErrorI
+      ClockErrorSchema
     >({[ImmutableModel.Tag]: 'ClockError'})({})
 
 /**

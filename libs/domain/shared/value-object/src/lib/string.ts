@@ -1,4 +1,4 @@
-import {ImmutableModel} from '@notes/domain/shared/immutable-model'
+import {ImmutableModel} from '@notes/utils/immutable-model'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory

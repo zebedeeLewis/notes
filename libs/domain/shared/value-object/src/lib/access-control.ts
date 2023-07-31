@@ -1,6 +1,6 @@
 import { flow as _} from 'fp-ts/function'
 
-import {ImmutableModel} from '@notes/domain/shared/immutable-model'
+import {ImmutableModel} from '@notes/utils/immutable-model'
 
 import {Id} from './id'
 import {Permission} from './permission'

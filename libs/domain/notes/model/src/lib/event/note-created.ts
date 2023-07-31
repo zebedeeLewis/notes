@@ -1,4 +1,4 @@
-import { ImmutableModel } from '@notes/domain/shared/immutable-model'
+import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Time, Id } from '@notes/domain/shared/value-object'
 
 import { NoteEntity } from '../entity/note'
