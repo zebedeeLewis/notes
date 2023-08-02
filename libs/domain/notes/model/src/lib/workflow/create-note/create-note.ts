@@ -111,8 +111,8 @@ export module _CreateNote {
     => Promise<NoteCreated>
 
   /**
-   * A function that takes care of retreving an access control list
-   * from persistent storage.
+   * A function that takes care of retreving the access control list
+   * associated with the given object from persistent storage.
    *
    * Note:
    *   any error that occurs within this function will be intercepted
@@ -154,6 +154,15 @@ export module _CreateNote {
     , clock: clock
     }
 
+  /**
+   * A function that ensure that the "access control list persistence
+   * adapter" never throws an error when called.
+   *
+   * @returns
+   *   - Either an "access control list persistence error" when the
+   *     adapter throws an error
+   *   - or the result of the adapter call.
+   */
   type safelyCallAclAdapter
     =  (a: AccessControlListPersistenceAdapter)
     => (c: Command)
@@ -170,13 +179,27 @@ export module _CreateNote {
   /**
    * TODO!!!
    *
+   * A function that determines if the given command is authorized
+   * for the given user, according to the given "access control list".
+   */
+  type isCommandAuthorizedForUser
+    =  (i: Id.Value)
+    => (c: Command)
+    => (a: AccessControlList)
+    => CreateNoteFailed|Command
+  export const isCommandAuthorizedForUser: isCommandAuthorizedForUser
+    = usrId => command => acl => command
+
+  /**
+   * TODO!!!
+   *
    * A function that verifies that a user is authorized to perform the
    * given command.
    *
    * @returns
    *   - Either "access control list persistence error" if an error
    *     occurs while retreiving the access control list from
-   *     persistence.
+   *     persistent storage.
    *   - Or one of:
    *     - (TODO) a "create note failed event" due to "unauthorized action"
    *       if the user is not authorized to execute the command
@@ -193,12 +216,12 @@ export module _CreateNote {
     = getAcl => command => TE.chainW(
       switchAuthResult({
         CreateNoteFailedEvent: TE.right,
-        IdValue: ()=> __(
+        IdValue: (userId)=> __(
           command,
           safelyCallAclAdapter(getAcl),
           TE.map(O.match(
-            ()=>command,
-            ()=>command )) )}))
+            ()=>command, // WHAT TO DO WHEN NO ACL IS FOUND??????
+            isCommandAuthorizedForUser(userId)(command) )))}))
 
   /**
    * A function that sets the given event time using the time provided
@@ -227,8 +250,6 @@ export module _CreateNote {
         , NoteCreatedEvent:
             set<NoteCreated, 'event_time'>('event_time')(time)
         , })(event)) )
-
-
 
   /**
    * A function that tries to get the user id of the currently
