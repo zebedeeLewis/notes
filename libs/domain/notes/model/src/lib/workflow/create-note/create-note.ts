@@ -196,10 +196,9 @@ export module _CreateNote {
         IdValue: ()=> __(
           command,
           safelyCallAclAdapter(getAcl),
-          TE.map(
-            O.match(
-              ()=>command,
-              ()=>command )) )}))
+          TE.map(O.match(
+            ()=>command,
+            ()=>command )) )}))
 
   /**
    * A function that sets the given event time using the time provided
