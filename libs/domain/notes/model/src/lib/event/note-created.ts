@@ -5,6 +5,7 @@ import { NoteEntity } from '../entity/note'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
+import set = ImmutableModel.set
 
 export module NoteCreatedEvent {
   export interface Schema
@@ -30,4 +31,11 @@ export module NoteCreatedEvent {
   export const __unsafe_of: __unsafe_of
     = factory<Schema>(
       DEFAULT_VALUE )
+
+  type setEventTime
+    =  (v: Time.Value)
+    => (m: Model)
+    => Model
+  export const setEventTime: setEventTime
+    = set('event_time')
 }

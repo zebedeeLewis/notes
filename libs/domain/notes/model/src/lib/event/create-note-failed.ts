@@ -1,8 +1,11 @@
+import { pipe as __, flow as _, apply} from 'fp-ts/function'
+
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Time, Id, Select } from '@notes/domain/shared/value-object'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
+import set = ImmutableModel.set
 
 export module CreateNoteFailedEvent {
   export type Reason
@@ -34,4 +37,16 @@ export module CreateNoteFailedEvent {
   export const __unsafe_of: __unsafe_of
     = factory<Schema>(
       DEFAULT_VALUE )
+
+  export const AUTHENTICATION_FAILURE = __(
+    'AuthenticationFailure',
+    Select.__unsafe_of<Reason>,
+    set<Model, 'reason'>('reason'),
+    apply(__unsafe_of({})) )
+
+  export const UNAUTHORIZED_ACTION = __(
+    'UnauthorizedAction',
+    Select.__unsafe_of<Reason>,
+    set<Model, 'reason'>('reason'),
+    apply(__unsafe_of({})) )
 }

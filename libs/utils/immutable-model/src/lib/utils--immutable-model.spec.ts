@@ -6,7 +6,7 @@ import
   , factory
   , get
   , set
-  , } from './domain-shared-immutable-model'
+  , } from './utils--immutable-model'
 
 interface TestSchema
   { _tag: 'TestModel'
