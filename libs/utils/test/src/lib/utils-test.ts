@@ -19,3 +19,7 @@ export const it_ = (
   name: string,
   callback: any,
   ) => it(`It ${name}`, callback)
+
+export const todo = (
+  name: string,
+  ) => it.todo(`: It ${name}`)

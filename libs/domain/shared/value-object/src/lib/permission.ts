@@ -5,9 +5,10 @@ import factory = ImmutableModel.factory
 
 export module Permission {
   type PermissionValue
-    = 'Read'
-    | 'Write'
-    | 'Execute'
+    = 'Create'
+    | 'Read'
+    | 'Update'
+    | 'Delete'
 
   export interface Schema
     { [ImmutableModel.Tag]: 'PermissionValue'
@@ -29,7 +30,8 @@ export module Permission {
     = v => factory<Schema>(DEFAULT)({
       _value: v as PermissionValue })
 
-  export const READ = __unsafe_of('Read')
-  export const WRITE = __unsafe_of('Write')
-  export const EXECUTE = __unsafe_of('Execute')
+  export const CREATE: Value = __unsafe_of('Create')
+  export const READ: Value = __unsafe_of('Read')
+  export const UPDATE: Value = __unsafe_of('Update')
+  export const DELETE: Value = __unsafe_of('Delete')
 }

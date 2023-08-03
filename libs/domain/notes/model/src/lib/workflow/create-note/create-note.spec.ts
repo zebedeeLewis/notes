@@ -6,8 +6,8 @@ import { pipe as __, flow as _ } from 'fp-ts/function'
 import { isLeft } from 'fp-ts/lib/Either'
 
 import { clockError } from '@notes/utils/clock'
-import { it_, when, given, and } from '@notes/utils/test'
-import { Id, Time, Select } from '@notes/domain/shared/value-object'
+import { it_, when, given, and, todo } from '@notes/utils/test'
+import { Id, Time, Select, AccessControl, Permission } from '@notes/domain/shared/value-object'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { CreateNoteCommand } from '../../command/create-note'
 import { NoteCreatedEvent } from '../../event/note-created'
@@ -98,8 +98,7 @@ describe('CreateNoteWorkflow', ()=>{
       const result = checkUserAccessViaFolderOwner(userId)(createNote)
       const actual = JSON.stringify(result)
 
-      const createNoteFailed = CreateNoteFailedEvent.__unsafe_of(
-        { reason: Select.__unsafe_of('UnauthorizedAction') })
+      const createNoteFailed = CreateNoteFailedEvent.UNAUTHORIZED_ACTION
       const expected = JSON.stringify(createNoteFailed)
 
       expect(actual).toEqual(expected)
@@ -160,14 +159,15 @@ describe('CreateNoteWorkflow', ()=>{
       })
     })
 
-    when('the "authentication result" is a user id', ()=>{
-      and('an error occurs in the "ACL persistence adapter"', ()=>{
+    given('that the "authentication result" is a user id', ()=>{
+      const userId = Id.__unsafe_of(randomUUID())
+      const authResult = __(userId, TE.right)
+
+      when('an error occurs in the "ACL persistence adapter"', ()=>{
         it_('returns an "access control list persistence error" '
            , async ()=>{
           const getAcl = async () => {throw new Error()}
           const createNote = CreateNoteCommand.__unsafe_of({})
-          const authResult = __(
-            randomUUID(), Id.__unsafe_of, TE.right)
 
           const task = checkUserAccess
             (getAcl)(createNote)(authResult)
@@ -180,16 +180,15 @@ describe('CreateNoteWorkflow', ()=>{
           expect(actual).toEqual(expected)
         })
       })
-      and('the "ACL persistence adapter" does not produce an '
+      when('the "ACL persistence adapter" does not produce an '
          +'"access control list".', ()=>{
+        const getAcl = async () => O.none
+
         it_('returns the original command if the authenticated user '
            +'owns the parent folders.', async ()=>{
-          const owner = Id.__unsafe_of(randomUUID())
+          const owner = userId
           const parent = FolderEntity.__unsafe_of({owner})
           const createNote = CreateNoteCommand.__unsafe_of({parent})
-
-          const authResult = __(owner, TE.right)
-          const getAcl = async () => O.none
 
           const task = checkUserAccess
             (getAcl)(createNote)(authResult)
@@ -200,6 +199,7 @@ describe('CreateNoteWorkflow', ()=>{
 
           expect(actual).toEqual(expected)
         })
+
         it_('returns a "create note failed event" due to '
            +'"unauthorized action" if the authenticated user does not '
            +'own the parent folders.', async ()=>{
@@ -207,67 +207,106 @@ describe('CreateNoteWorkflow', ()=>{
           const parent = FolderEntity.__unsafe_of({owner})
           const createNote = CreateNoteCommand.__unsafe_of({parent})
 
-          const userId = Id.__unsafe_of(randomUUID())
-          const authResult = __(userId, TE.right)
-          const getAcl = async () => O.none
-
           const task = checkUserAccess
             (getAcl)(createNote)(authResult)
           const result = await task()
 
           const actual = JSON.stringify(result)
 
-          const createNoteFailed = CreateNoteFailedEvent.__unsafe_of(
-            { reason: Select.__unsafe_of('UnauthorizedAction') })
+          const createNoteFailed = CreateNoteFailedEvent.UNAUTHORIZED_ACTION
           const expected = __(
               createNoteFailed, E.right, JSON.stringify)
 
           expect(actual).toEqual(expected)
         })
       })
-      and('the "ACL persistence adapter" produces an '
+      when('the "ACL persistence adapter" produces an '
          +'"access control list".', ()=>{
-        it_('returns the original command if the authenticated user '
-           +'owns the parent folders.', async ()=>{
-          const owner = Id.__unsafe_of(randomUUID())
-          const parent = FolderEntity.__unsafe_of({owner})
-          const createNote = CreateNoteCommand.__unsafe_of({parent})
+        const acl = AccessControlListEntity.__unsafe_of({})
+        const getAcl = async () => O.some(acl)
 
-          const authResult = __(owner, TE.right)
-          const getAcl = async () => O.none
+        and('the user id is the same as that of the parent folder owner'
+           ,()=>{
+          const owner = userId
 
-          const task = checkUserAccess
-            (getAcl)(createNote)(authResult)
-          const result = await task()
+          it_('returns the original command', async ()=>{
+            const parent = FolderEntity.__unsafe_of({owner})
+            const createNote = CreateNoteCommand.__unsafe_of({parent})
 
-          const actual = JSON.stringify(result)
-          const expected = __(createNote, E.right, JSON.stringify)
+            const task = checkUserAccess
+              (getAcl)(createNote)(authResult)
 
-          expect(actual).toEqual(expected)
+            const result = await task()
+            const actual = JSON.stringify(result)
+
+            const expected = __(
+                createNote, E.right, JSON.stringify)
+
+            expect(actual).toEqual(expected)
+          })
         })
-        it_('returns a "create note failed event" due to '
-           +'"unauthorized action" if the authenticated user does not '
-           +'own the parent folders.', async ()=>{
+
+        and('the user id is not the same as that of the parent folder owner'
+           ,()=>{
           const owner = Id.__unsafe_of(randomUUID())
-          const parent = FolderEntity.__unsafe_of({owner})
-          const createNote = CreateNoteCommand.__unsafe_of({parent})
 
-          const userId = Id.__unsafe_of(randomUUID())
-          const authResult = __(userId, TE.right)
-          const getAcl = async () => O.none
+          it_('returns the original command if there is a '
+             +'"creat permission" for the user in the "access control list".'
+             +'produced by the "access control list peristence adapter"'
+             ,async ()=>{
+            const parent = FolderEntity.__unsafe_of({owner})
+            const list =
+              [ AccessControl.__unsafe_of(
+                { user: userId
+                , permission: Permission.CREATE
+                , })
+              , ]
 
-          const task = checkUserAccess
-            (getAcl)(createNote)(authResult)
-          const result = await task()
+            const acl = AccessControlListEntity.__unsafe_of({list})
+            const getAcl = async () => O.some(acl)
 
-          const actual = JSON.stringify(result)
+            const createNote = CreateNoteCommand.__unsafe_of({parent})
 
-          const createNoteFailed = CreateNoteFailedEvent.__unsafe_of(
-            { reason: Select.__unsafe_of('UnauthorizedAction') })
-          const expected = __(
-              createNoteFailed, E.right, JSON.stringify)
+            const task = checkUserAccess
+              (getAcl)(createNote)(authResult)
 
-          expect(actual).toEqual(expected)
+            const result = await task()
+            const actual = JSON.stringify(result)
+
+            const expected = __(
+                createNote, E.right, JSON.stringify)
+
+            expect(actual).toEqual(expected)
+          })
+
+          it_('returns a "create note failed event" due to '
+             +'"unauthorized action" if there is no "create permission" '
+             +'in the "access control list" for the user', async ()=>{
+            const parent = FolderEntity.__unsafe_of({owner})
+            const list =
+              [ AccessControl.__unsafe_of(
+                { user: userId
+                , permission: Permission.READ
+                , })
+              , ]
+
+            const acl = AccessControlListEntity.__unsafe_of({list})
+            const getAcl = async () => O.some(acl)
+
+            const createNote = CreateNoteCommand.__unsafe_of({parent})
+
+            const task = checkUserAccess
+              (getAcl)(createNote)(authResult)
+
+            const result = await task()
+            const actual = JSON.stringify(result)
+
+            const expected = __(
+              E.right(CreateNoteFailedEvent.UNAUTHORIZED_ACTION),
+              JSON.stringify)
+
+            expect(actual).toEqual(expected)
+          })
         })
       })
     })

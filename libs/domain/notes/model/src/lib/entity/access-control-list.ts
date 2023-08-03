@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Id, AccessControl } from '@notes/domain/shared/value-object'
 
@@ -16,7 +17,7 @@ export module AccessControlListEntity {
   
   export const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'AccessControlListEntity'
-      , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
+      , id: Id.__unsafe_of(randomUUID())
       , list: []
       , }
   
@@ -24,6 +25,5 @@ export module AccessControlListEntity {
     = (m: Partial<Schema>)
     => Model
   export const __unsafe_of: __unsafe_of
-    = factory<Schema>(
-      DEFAULT_VALUE )
+    = factory<Schema>(DEFAULT_VALUE)
 }

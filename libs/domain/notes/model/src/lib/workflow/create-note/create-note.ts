@@ -1,6 +1,7 @@
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/lib/Option'
 import { matchW } from 'fp-ts/lib/boolean'
+import { and } from 'fp-ts/lib/Predicate'
 import { pipe as __, flow as _, apply, identity } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
@@ -124,7 +125,10 @@ export module _CreateNote {
    * @returns
    *     - either ACLPersistenceError if any error occurs
    *     - Nothing if the ACL was not found
-   *     - or the AccessControlList that was created.
+   *     - or the AccessControlList that was created. the create
+   *       note workflow assumes that this access control list
+   *       belongs to the parent folder in which the new note will
+   *       be created.
    */
   export type AccessControlListPersistenceAdapter
     =  (n: Command)
@@ -334,6 +338,7 @@ export module _CreateNote {
        isAuthorizedAction(command),
        persistCreateNote,
        setEventTimeUsingClock(clock),
+       x=>x,
        /*setOwner*/ )
     }
 }

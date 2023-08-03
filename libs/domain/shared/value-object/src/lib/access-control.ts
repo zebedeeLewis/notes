@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto'
 import { flow as _} from 'fp-ts/function'
 
 import {ImmutableModel} from '@notes/utils/immutable-model'
@@ -9,11 +10,10 @@ import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
 
 export module AccessControl {
-  type AccessControlValue = [Id.Value, Id.Value, Permission.Value]
-
   export interface Schema
     { [ImmutableModel.Tag]: 'AccessControlValue'
-    , _value: AccessControlValue
+    , user: Id.Value
+    , permission: Permission.Value
     , }
   
   export type Value
@@ -21,38 +21,13 @@ export module AccessControl {
   
   export const DEFAULT: Schema
     = { [ImmutableModel.Tag]: 'AccessControlValue'
-      , _value:
-        [ Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
-        , Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
-        , Permission.READ
-        , ]
+      , user: Id.__unsafe_of(randomUUID())
+      , permission: Permission.READ
       , }
   
   type __unsafe_of
-    =  (v: unknown)
+    = (v: Partial<Schema>)
     => Value
   export const __unsafe_of: __unsafe_of
-    = v => factory<Schema>(DEFAULT)({
-      _value: v as AccessControlValue })
-
-  type getUserId
-    =  (o: Value)
-    => Id.Value
-  export const getUserId: getUserId
-    = _( ImmutableModel.get('_value'),
-         aclValue => aclValue[0] )
-
-  type getNoteId
-    =  (o: Value)
-    => Id.Value
-  export const getNoteId: getNoteId
-    = _( ImmutableModel.get('_value'),
-         aclValue => aclValue[1] )
-
-  type getPermission
-    =  (o: Value)
-    => Permission.Value
-  export const getPermission: getPermission
-    = _( ImmutableModel.get('_value'),
-         aclValue => aclValue[2] )
+    = factory<Schema>(DEFAULT)
 }
