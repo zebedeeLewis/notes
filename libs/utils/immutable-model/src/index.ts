@@ -6,5 +6,6 @@ export module ImmutableModel {
   export import TaggedModel = _mod.TaggedModel
   export import factory = _mod.factory
   export import get = _mod.get
+  export import transferProp = _mod.transferProp
   export import set = _mod.set
 }

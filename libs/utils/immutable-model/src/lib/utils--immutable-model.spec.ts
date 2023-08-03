@@ -6,16 +6,19 @@ import
   , factory
   , get
   , set
+  , transferProp
   , } from './utils--immutable-model'
 
 interface TestSchema
   { _tag: 'TestModel'
   , value: number
+  , otherValue: number
   , }
 
 const DEFAULT_SCHEMA: TestSchema
   = { _tag: 'TestModel'
     , value: 21
+    , otherValue: 999
     , }
 
 type TestModel = TaggedModel<TestSchema>
@@ -91,6 +94,21 @@ describe('DomainShared.ImmutableModel', ()=>{
 
       expect(actual).toEqual(expected)
     })
+  })
+  describe('transferProp()', ()=>{
+    it_('it transfers the value from "property A" to "property B" on the '
+       +'same model', ()=>{
+      const valA = 3427
+      const valB = 871
+      const keyA = 'value'
+      const keyB = 'otherValue'
 
+      const model = createTestModel({[keyA]: valA, [keyB]: valB})
+
+      const actual = __(model, transferProp(keyA)(keyB), get(keyB))
+      const expected = valA
+
+      expect(actual).toEqual(expected)
+    })
   })
 })

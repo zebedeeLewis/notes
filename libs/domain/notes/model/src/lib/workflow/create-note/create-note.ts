@@ -1,5 +1,6 @@
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/lib/Option'
+import { matchW } from 'fp-ts/lib/boolean'
 import { pipe as __, flow as _, apply, identity } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
@@ -13,9 +14,11 @@ import { CreateNoteCommand } from '../../command/create-note'
 import { CreateNoteFailedEvent } from '../../event/create-note-failed'
 import { NoteCreatedEvent } from '../../event/note-created'
 import { AccessControlListEntity } from '../../entity/access-control-list'
+import { FolderEntity } from '../../entity/folder'
 import { Err } from './error'
 
 import Command = CreateNoteCommand.Model
+import Folder = FolderEntity.Model
 import NoteCreated = NoteCreatedEvent.Model
 import CreateNoteFailed = CreateNoteFailedEvent.Model
 import AccessControlList = AccessControlListEntity.Model
@@ -23,7 +26,6 @@ import set = ImmutableModel.set
 import get = ImmutableModel.get
 
 export module _CreateNote {
-
   /*
    * One of PersistenceError, AuthenticationError, ClockError
    *
@@ -170,11 +172,35 @@ export module _CreateNote {
   export const safelyCallAclAdapter: safelyCallAclAdapter
     = adapter => TE.tryCatchK(adapter, Err.aclPersistenceError)
 
-  const switchAuthResult
+  const authResultCase
     = makeADT(ImmutableModel.Tag)(
       { CreateNoteFailedEvent: ofType<CreateNoteFailed>()
       , IdValue: ofType<Id.Value>()
       , }).matchStrict<TE.TaskEither<WorkflowError, CreateNoteFailed|Command>>
+
+  /**
+   * A function that determines if a given user is authorized to create
+   * a note by checking if the user owns the target folder.
+   *
+   * @returns
+   *   - one of
+   *     - the original command if the "user id" is the same as the
+   *       parent folders "owner id"
+   *     - a create note failed event if the user id is not the parent
+   *       folders owner id
+   */
+  type checkUserAccessViaFolderOwner
+    =  (i: Id.Value)
+    => (c: Command)
+    => CreateNoteFailed|Command
+  export const checkUserAccessViaFolderOwner: checkUserAccessViaFolderOwner
+    = userId => command => __(
+      command,
+      get('parent'),
+      get('owner'),
+      ownerId=>ownerId===userId, matchW(
+        ()=>CreateNoteFailedEvent.UNAUTHORIZED_ACTION,
+        ()=>command ))
 
   /**
    * TODO!!!
@@ -182,12 +208,12 @@ export module _CreateNote {
    * A function that determines if the given command is authorized
    * for the given user, according to the given "access control list".
    */
-  type isCommandAuthorizedForUser
+  type checkUserAccessViaACL
     =  (i: Id.Value)
     => (c: Command)
     => (a: AccessControlList)
     => CreateNoteFailed|Command
-  export const isCommandAuthorizedForUser: isCommandAuthorizedForUser
+  export const checkUserAccessViaACL: checkUserAccessViaACL
     = usrId => command => acl => command
 
   /**
@@ -197,31 +223,34 @@ export module _CreateNote {
    * given command.
    *
    * @returns
-   *   - Either "access control list persistence error" if an error
-   *     occurs while retreiving the access control list from
-   *     persistent storage.
+   *   - Either one of
+   *     - "access control list persistence error" if an error
+   *       occurs while retreiving the access control list from
+   *       persistent storage.
+   *     - the received "authentication error" if such an error was
+   *       passed as the "authentication result" argument.
    *   - Or one of:
    *     - (TODO) a "create note failed event" due to "unauthorized action"
    *       if the user is not authorized to execute the command
    *     - the given "create note failed event" if the authentication
    *       result parameter is a "create note failed event".
-   *     - The original command given to the function.
+   *     - The original command given to the function if the user is
+   *       authorized to execute the command.
    */
-  type verifyAuthorizedUserAction
+  type checkUserAccess
     =  (a: AccessControlListPersistenceAdapter)
     => (c: Command)
     => (i: TaskEither<Err.AuthenticationError, CreateNoteFailed|Id.Value>)
     => TaskEither<WorkflowError, CreateNoteFailed|Command>
-  export const verifyAuthorizedUserAction: verifyAuthorizedUserAction
-    = getAcl => command => TE.chainW(
-      switchAuthResult({
-        CreateNoteFailedEvent: TE.right,
-        IdValue: (userId)=> __(
-          command,
-          safelyCallAclAdapter(getAcl),
-          TE.map(O.match(
-            ()=>command, // WHAT TO DO WHEN NO ACL IS FOUND??????
-            isCommandAuthorizedForUser(userId)(command) )))}))
+  export const checkUserAccess: checkUserAccess
+    = getAcl => command => TE.chain(authResultCase({
+      CreateNoteFailedEvent: TE.right,
+      IdValue: (userId)=> __(
+        command,
+        safelyCallAclAdapter(getAcl),
+        TE.map(O.match(
+          ()=>checkUserAccessViaFolderOwner(userId)(command),
+          checkUserAccessViaACL(userId)(command) )))}))
 
   /**
    * A function that sets the given event time using the time provided
@@ -298,12 +327,13 @@ export module _CreateNote {
         = TE.chainW(safelyCallNotePersistenceAdapter)
 
       const isAuthorizedAction
-        = verifyAuthorizedUserAction(aclPersistenceAdapter)
+        = checkUserAccess(aclPersistenceAdapter)
 
       return __(
        getUserId(authAdapter),
        isAuthorizedAction(command),
        persistCreateNote,
-       setEventTimeUsingClock(clock) )
+       setEventTimeUsingClock(clock),
+       /*setOwner*/ )
     }
 }
