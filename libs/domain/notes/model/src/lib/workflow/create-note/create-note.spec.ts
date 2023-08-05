@@ -21,6 +21,8 @@ import getUserId = _CreateNote.getUserId
 import configure = _CreateNote.configure
 import checkUserAccessViaFolderOwner =
   _CreateNote.checkUserAccessViaFolderOwner
+import checkUserAccessViaACL =
+  _CreateNote.checkUserAccessViaACL
 import checkUserAccess = _CreateNote.checkUserAccess
 import setEventTimeUsingClock = _CreateNote.setEventTimeUsingClock
 import Dependencies = _CreateNote.Dependencies
@@ -116,6 +118,11 @@ describe('CreateNoteWorkflow', ()=>{
       const expected = JSON.stringify(createNote)
 
       expect(actual).toEqual(expected)
+    })
+  })
+  describe('checkUserAccessViaACL()', ()=>{
+    it_('returns the original command if the given user id is the same '
+       +'as that of the "parent folder owner"', ()=>{
     })
   })
   describe('checkUserAccess()', ()=>{
@@ -252,7 +259,6 @@ describe('CreateNoteWorkflow', ()=>{
 
           it_('returns the original command if there is a '
              +'"creat permission" for the user in the "access control list".'
-             +'produced by the "access control list peristence adapter"'
              ,async ()=>{
             const parent = FolderEntity.__unsafe_of({owner})
             const list =

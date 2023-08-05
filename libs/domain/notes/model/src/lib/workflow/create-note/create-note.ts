@@ -2,13 +2,14 @@ import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/lib/Option'
 import { matchW } from 'fp-ts/lib/boolean'
 import { and } from 'fp-ts/lib/Predicate'
+import { filter } from 'fp-ts/lib/Array'
 import { pipe as __, flow as _, apply, identity } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
 import { Option } from 'fp-ts/lib/Option'
 
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { Id, Time } from '@notes/domain/shared/value-object'
+import { AccessControl, Id, Permission, Time } from '@notes/domain/shared/value-object'
 import { ClockError, clock, safelyCallClock } from '@notes/utils/clock'
 
 import { CreateNoteCommand } from '../../command/create-note'
@@ -207,8 +208,33 @@ export module _CreateNote {
         ()=>command ))
 
   /**
+   * A function that reduces a list of access controls to only those
+   * matching the given user id.
+   */
+  type reduceToUserAcls
+    =  (i: Id.Value)
+    => (l: Array<AccessControl.Value>)
+    => Array<AccessControl.Value>
+  export const reduceToUserAcls: reduceToUserAcls
+    = userId => filter(_(get('user'), id=>id===userId))
+
+  /**
    * TODO!!!
    *
+   * A function that checks the given permission exists in the list of
+   * access controls for the given user.
+   * 
+   */
+  type hasPermission
+    =  (p: Permission.Value)
+    => (i: Id.Value)
+    => (a: Array<AccessControl.Value>)
+    => boolean
+  export const hasPermission: hasPermission
+    = userId => permission => acl => false
+
+
+  /**
    * A function that determines if the given command is authorized
    * for the given user, according to the given "access control list".
    */
@@ -218,7 +244,13 @@ export module _CreateNote {
     => (a: AccessControlList)
     => CreateNoteFailed|Command
   export const checkUserAccessViaACL: checkUserAccessViaACL
-    = usrId => command => acl => command
+    = userId => c => _(
+      get('list'),
+      reduceToUserAcls(userId),
+      __(userId, hasPermission(Permission.CREATE)),
+      matchW(
+        ()=>CreateNoteFailedEvent.UNAUTHORIZED_ACTION,
+        ()=>c ))
 
   /**
    * TODO!!!
