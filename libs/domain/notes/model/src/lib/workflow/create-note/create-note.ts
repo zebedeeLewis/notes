@@ -364,14 +364,6 @@ export module _CreateNote {
       TE.chainW(O.matchW(
         lazy(TE.right(CreateNoteFailedEvent.UNAUTHENTICATED)),
         _( openUserAccessQueryOnFolder, p(targetLocation(c)),
-           x=>{
-             // console.log('[[DEBUG]]', JSON.stringify(x,null, 2))
-             // console.log('[[DEBUG A]]',
-             //   __(x, get('resource'), get('owner'), JSON.stringify))
-             console.log('[[DEBUG B]]', get('user')(x))
-             console.log('[[DEBUG C]]', randomUUID())
-             return x
-           },
            executeAccessQuery(a2),
            TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
              AccessUnauthorized: lazy(CreateNoteFailedEvent.UNAUTHORIZED),
