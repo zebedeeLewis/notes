@@ -8,13 +8,18 @@ import
 , flow as _
 , identity
 , apply as p
-, flip } from 'fp-ts/function'
+, } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
 import { Option } from 'fp-ts/lib/Option'
 
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { AccessControl, Id, Permission, Time } from '@notes/domain/shared/value-object'
+import
+{ AccessControl
+, Id
+, Permission
+, Time
+, } from '@notes/domain/shared/value-object'
 import { ClockError, clock, safelyCallClock } from '@notes/utils/clock'
 
 import { CreateNoteCommand } from '../../command/create-note'
@@ -31,6 +36,7 @@ import NoteCreated = NoteCreatedEvent.Model
 import CreateNoteFailed = CreateNoteFailedEvent.Model
 import AccessControlList = AccessControlListEntity.Model
 import set = ImmutableModel.set
+import transferProp = ImmutableModel.transferProp
 import get = ImmutableModel.get
 import equals = ImmutableModel.equals
 
@@ -124,6 +130,21 @@ export module _CreateNote {
     => Promise<NoteCreated>
 
   /**
+   * A function that ensures that the persistence adapter never throws.
+   *
+   * @returns
+   * - Either a note persistence error if the adapter throws
+   * - or the result of calling the adapter which is assumed to
+   *   be a note created event.
+   */
+  type safelyCallNotePersistenceAdapter
+    =  (a: NotePersistenceAdapter)
+    => (c: Command)
+    => TaskEither<Err.NotePersistenceError, NoteCreated>
+  const safelyCallNotePersistenceAdapter: safelyCallNotePersistenceAdapter
+    = adapter => TE.tryCatchK(adapter, Err.notePersistenceError)
+
+  /**
    * A function that takes care of retreving the access control list
    * associated with the given object from persistent storage.
    *
@@ -137,12 +158,28 @@ export module _CreateNote {
    *     - Nothing if the ACL was not found
    *     - or the AccessControlList that was created. the create
    *       note workflow assumes that this access control list
-   *       belongs to the parent folder in which the new note will
+   *       belongs to the target folder in which the new note will
    *       be created.
    */
   export type ACLAdapter
     =  (i: Id.Value)
     => Promise<Option<AccessControlList>>
+
+  /**
+   * A function that ensure that the "access control list persistence
+   * adapter" never throws an error when called.
+   *
+   * @returns
+   *   - Either an "access control list persistence error" when the
+   *     adapter throws an error
+   *   - or the result of the adapter call.
+   */
+  type safelyCallACLAdapter
+    =  (a2: ACLAdapter)
+    => (i: Id.Value)
+    => TE.TaskEither<Err.ACLPersistenceError, Option<AccessControlList>>
+  export const safelyCallACLAdapter: safelyCallACLAdapter
+    = a2 => TE.tryCatchK(a2, Err.aclPersistenceError)
 
   /**
    * A function that gets the current authenticated users id. 
@@ -156,9 +193,24 @@ export module _CreateNote {
    *   an Id.Value representing the current users Id or none
    *   if the user is not authenticated.
    */
-  export type AuthenticationAdapter
+  export type AuthAdapter
     =  ()
     => Promise<Option<Id.Value>>
+
+  /**
+   * A function that ensure the authentication adapter never throws.
+   *
+   * @returns
+   * - Either an authentication error
+   * - Or one of
+   *   - nothing if the there is no authenticated user
+   *   - the authenticated users id
+   */
+  type safelyCallAuthAdapter
+    =  (a1: AuthAdapter)
+    => TaskEither<Err.AuthenticationError, Option<Id.Value>>
+  export const safelyCallAuthAdapter: safelyCallAuthAdapter
+    = a1 => TE.tryCatch(a1, Err.authenticationError)
 
   /**
    * An object containing dependencies needed by the workflow function
@@ -166,37 +218,9 @@ export module _CreateNote {
   export interface Dependencies
     { notePersistenceAdapter: NotePersistenceAdapter
     , aclPersistenceAdapter: ACLAdapter
-    , authAdapter: AuthenticationAdapter
+    , authAdapter: AuthAdapter
     , clock: clock
     }
-
-  /**
-   * A function that ensure that the "access control list persistence
-   * adapter" never throws an error when called.
-   *
-   * @returns
-   *   - Either an "access control list persistence error" when the
-   *     adapter throws an error
-   *   - or the result of the adapter call.
-   */
-  type safelyCallACLAdapter
-    =  (a: ACLAdapter)
-    => (i: Id.Value)
-    => TE.TaskEither<Err.ACLPersistenceError, Option<AccessControlList>>
-  export const safelyCallACLAdapter: safelyCallACLAdapter
-    = adapter => TE.tryCatchK(adapter, Err.aclPersistenceError)
-
-  type safelyCallAuthenticationAdapter
-    =  (a1: AuthenticationAdapter)
-    => TaskEither<Err.AuthenticationError, Option<Id.Value>>
-  export const safelyCallAuthenticationAdapter: safelyCallAuthenticationAdapter
-    = a1 => TE.tryCatch(a1, Err.authenticationError)
-
-  const authResultCase
-    = makeADT(ImmutableModel.Tag)(
-      { CreateNoteFailedEvent: ofType<CreateNoteFailed>()
-      , IdValue: ofType<Id.Value>()
-      , }).matchStrict<TE.TaskEither<WorkflowError, CreateNoteFailed|Command>>
 
   /**
    * A function that executes the given access query.
@@ -225,6 +249,10 @@ export module _CreateNote {
   /**
    * A function that reduces a list of access controls to only those
    * matching the given user id.
+   *
+   * @returns
+   * - a new array where every item has an id matching the given user id
+   * - an empty array if no item matches the given user id
    */
   type reduceToUserACLs
     =  (i: Id.Value)
@@ -234,11 +262,14 @@ export module _CreateNote {
     = userId => filter(_(get('user'), id=>id===userId))
 
   /**
-   * TODO!!!
-   *
-   * A function that checks the given permission exists in the list of
-   * access controls for the given user.
+   * A function that checks if the given permission exists in the list of
+   * access controls.
    * 
+   * @returns
+   * - false if no access control exists in the list with the given 
+   *   permission
+   * - true if at least one access control exists in the list with
+   *   the given permission
    */
   type hasPermission
     =  (p: Permission.Value)
@@ -250,7 +281,6 @@ export module _CreateNote {
       O.match(
         lazy(false),
         lazy(true) ))
-
 
   /**
    * A function that determines if the given command is authorized
@@ -284,27 +314,23 @@ export module _CreateNote {
              lazy(AccessState.authorized({query})) )))))
 
   /**
-   * TODO!!!
+   * A function that opens a new access query on the given folder by
+   * the given user.
+   *
+   * @returns
+   * - a new access query
    */
   type openUserAccessQueryOnFolder
     =  (u: Id.Value)
     => (f: Folder)
     => AccessQuery.Model
-  const openUserAccessQueryOnFolder: openUserAccessQueryOnFolder
+  export const openUserAccessQueryOnFolder: openUserAccessQueryOnFolder
     = u => f => __(
       AccessQuery.of({}),
       set<AccessQuery.Model, 'resource'>('resource')(f),
       set<AccessQuery.Model, 'user'>('user')(u))
 
-  type targetLocation
-    =  (c: Command)
-    => Folder
-  const targetLocation: targetLocation
-    = get('parent')
-
   /**
-   * TODO!!!
-   *
    * A function that executes the given access query.
    *
    * If the user has create access to the resource under query or if
@@ -332,13 +358,11 @@ export module _CreateNote {
 
 
   /**
-   * TODO!!!
-   *
    * A function that verifies that a user is authorized to perform the
    * given command.
    *
-   * If the user has create access to the parent folder specified in the
-   * given command or if the user is the owner of the parent folder, then
+   * If the user has create access to the target folder specified in the
+   * given command or if the user is the owner of the target folder, then
    * he is authorized.
    *
    * @returns
@@ -358,16 +382,16 @@ export module _CreateNote {
    *
    */
   type checkUserAccess
-    =  (a1: AuthenticationAdapter)
+    =  (a1: AuthAdapter)
     => (a2: ACLAdapter)
     => (c: Command)
     => TaskEither<WorkflowError, CreateNoteFailed|Command>
   export const checkUserAccess: checkUserAccess
     = a1 => a2 => c => __(
-      safelyCallAuthenticationAdapter(a1),
+      safelyCallAuthAdapter(a1),
       TE.chainW(O.matchW(
         lazy(TE.right(CreateNoteFailedEvent.UNAUTHENTICATED)),
-        _( openUserAccessQueryOnFolder, p(targetLocation(c)),
+        _( openUserAccessQueryOnFolder, __(c, get('targetFolder'), p),
            executeAccessQuery(a2),
            TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
              AccessUnauthorized: lazy(CreateNoteFailedEvent.UNAUTHORIZED),
@@ -414,14 +438,14 @@ export module _CreateNote {
    *       - the user id of the authenticated user
    */
   type getUserId
-    =  (a: AuthenticationAdapter)
+    =  (a1: AuthAdapter)
     => TaskEither<Err.AuthenticationError, CreateNoteFailed|Id.Value>
   export const getUserId: getUserId
-    = adapter => __(
-      TE.tryCatch(adapter, Err.authenticationError),
+    = a1 => __(
+      TE.tryCatch(a1, Err.authenticationError),
       TE.map(O.matchW(
         lazy(CreateNoteFailedEvent.UNAUTHENTICATED),
-        identity)) )
+        identity )))
 
   /**
    * TODO!!!
@@ -437,15 +461,12 @@ export module _CreateNote {
        , authAdapter
        , aclPersistenceAdapter
        , clock
-       }) => c => {
-
-      const safelyCallNotePersistenceAdapter
-        = TE.tryCatchK(
-          notePersistenceAdapter,
-          Err.notePersistenceError)
-
+       , }
+    ) => c => {
       const persistCreateNote
-        = TE.chainW(safelyCallNotePersistenceAdapter)
+        = TE.chainW(__(
+          notePersistenceAdapter,
+          safelyCallNotePersistenceAdapter))
 
       const checkUserAccesForCommand
         = checkUserAccess(authAdapter)(aclPersistenceAdapter)
@@ -453,7 +474,5 @@ export module _CreateNote {
       return __(
         checkUserAccesForCommand(c),
         persistCreateNote,
-        setEventTimeUsingClock(clock),
-        /*setOwner*/ )
-    }
+        setEventTimeUsingClock(clock) )}
 }

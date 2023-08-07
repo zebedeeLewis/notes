@@ -3,7 +3,6 @@ import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/lib/Option'
 import { pipe as __, flow as _ } from 'fp-ts/function'
-import { isLeft } from 'fp-ts/lib/Either'
 
 import { clockError } from '@notes/utils/clock'
 import { it_, when, given, and, todo } from '@notes/utils/test'
@@ -19,17 +18,18 @@ import { Err } from './error'
 
 import getUserId = _CreateNote.getUserId
 import configure = _CreateNote.configure
+import openUserAccessQueryOnFolder = _CreateNote.openUserAccessQueryOnFolder
+import hasPermission = _CreateNote.hasPermission
+import reduceToUserACLs = _CreateNote.reduceToUserACLs
 import executeAccessQuery = _CreateNote.executeAccessQuery
 import checkUserAccessViaFolderOwner =
   _CreateNote.checkUserAccessViaFolderOwner
-import checkUserAccessViaACL =
-  _CreateNote.checkUserAccessViaACL
+import checkUserAccessViaACL = _CreateNote.checkUserAccessViaACL
 import checkUserAccess = _CreateNote.checkUserAccess
 import setEventTimeUsingClock = _CreateNote.setEventTimeUsingClock
 import Dependencies = _CreateNote.Dependencies
-import ACLAdapter
-  = _CreateNote.ACLAdapter
-import AuthenticationAdapter = _CreateNote.AuthenticationAdapter
+import ACLAdapter = _CreateNote.ACLAdapter
+import AuthAdapter = _CreateNote.AuthAdapter
 import NotePersistenceAdapter = _CreateNote.NotePersistenceAdapter
 import authenticationError = Err.authenticationError
 import get = ImmutableModel.get
@@ -38,9 +38,19 @@ import { AccessQuery, AccessState } from './access'
 const TEST_TIME = new Date('1914-05-11T06:00:00.000Z')
 
 describe('CreateNoteWorkflow', ()=>{
+  const getTestTime = () => TEST_TIME
+  const errClock = () => {throw new Error()}
+
+  const errPersistNote = async ()=>{throw new Error()}
+  const persistRandomNote
+    = async () => NoteCreatedEvent.__unsafe_of(
+      {id: Id.__unsafe_of(randomUUID())})
+
   const acl = AccessControlListEntity.__unsafe_of({})
+  const errGetSomeRandomACL = async () => {throw new Error()}
   const getSomeRandomACL = async () => __(acl, O.some)
 
+  const errGetSomeRandomUID = async () => {throw new Error()}
   const getSomeRandomUID = async () =>  __(
     randomUUID(), Id.__unsafe_of, O.some)
 
@@ -49,7 +59,7 @@ describe('CreateNoteWorkflow', ()=>{
   describe('setEventTimeUsingClock()', ()=>{
     it_('returns a clock error if any error occurs in the clock '
        +'function', ()=>{
-      const clock = () => {throw new Error()}
+      const clock = errClock
       const result = setEventTimeUsingClock(clock)
 
       const actual = JSON.stringify(result)
@@ -61,7 +71,7 @@ describe('CreateNoteWorkflow', ()=>{
       it_('sets event time to the time produced by the clock '
          +'function', async ()=>{
         const noteCreated = NoteCreatedEvent.__unsafe_of({})
-        const clock = () => TEST_TIME
+        const clock = getTestTime
 
         const task = __(
           TE.right(noteCreated),
@@ -81,7 +91,7 @@ describe('CreateNoteWorkflow', ()=>{
       it_('sets event time to the time produced by the clock '
          +'function', async ()=>{
         const noteCreated = CreateNoteFailedEvent.__unsafe_of({})
-        const clock = () => TEST_TIME
+        const clock = getTestTime
 
         const task = __(
           TE.right(noteCreated),
@@ -96,6 +106,126 @@ describe('CreateNoteWorkflow', ()=>{
 
         expect(actual).toEqual(expected)
       })
+    })
+  })
+
+  describe('openUserAccessQueryOnFolder()',()=>{
+    it_('returns a new access query with the given user id and the resource '
+       +'set to the given folder',()=>{
+      const user = Id.__unsafe_of(randomUUID())
+      const resource = FolderEntity.__unsafe_of({})
+
+      const actual = openUserAccessQueryOnFolder(user)(resource)
+      const expected = AccessQuery.of({user, resource})
+
+      expect(actual).toEqual(expected)
+    })
+  })
+
+  describe('hasPermission()',()=>{
+    it_('returns false if no access control exists in the list with the '
+       +'given permission',()=>{
+      const ACLs =
+        [ AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.CREATE
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.READ
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.UPDATE
+          , })
+        , ]
+
+      const actual = hasPermission(Permission.DELETE)(ACLs)
+      const expected = false
+
+      expect(actual).toEqual(expected)
+    })
+    it_('returns true if at least one access control exists in the list '
+       +'with the given permission',()=>{
+      const ACLs =
+        [ AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.CREATE
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.READ
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.UPDATE
+          , })
+        , ]
+
+      const actual = hasPermission(Permission.READ)(ACLs)
+      const expected = true
+
+      expect(actual).toEqual(expected)
+    })
+  })
+
+  describe('reduceToUserACLs()',()=>{
+    it_('returns a new array consisting of only the items that have an '
+       +'id matching the given user id',()=>{
+      const user = Id.__unsafe_of(randomUUID())
+      const johnsACLs =
+        [ AccessControl.__unsafe_of(
+          { user, permission: Permission.CREATE })
+        , AccessControl.__unsafe_of(
+          { user, permission: Permission.DELETE })
+        , AccessControl.__unsafe_of(
+          { user, permission: Permission.UPDATE })
+        , ]
+
+      const ACLs =
+        [ ... johnsACLs
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.CREATE
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.READ
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.UPDATE
+          , })
+        , ]
+
+      const actual = reduceToUserACLs(user)(ACLs)
+      const expected = johnsACLs
+
+      expect(actual).toEqual(expected)
+    })
+    it_('returns an empty array if no items have an id matching the '
+       +'given user id',()=>{
+      const user = Id.__unsafe_of(randomUUID())
+
+      const ACLs =
+        [ AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.CREATE
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.READ
+          , })
+        , AccessControl.__unsafe_of(
+          { user: Id.__unsafe_of(randomUUID())
+          , permission: Permission.UPDATE
+          , })
+        , ]
+
+      const actual = reduceToUserACLs(user)(ACLs)
+      const expected = []
+
+      expect(actual).toEqual(expected)
     })
   })
 
@@ -447,7 +577,7 @@ describe('CreateNoteWorkflow', ()=>{
           const targetFolder = FolderEntity.__unsafe_of(
             {owner})
           const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
-            {parent: targetFolder })
+            {targetFolder})
 
           it_('returns the original command indicating that the user '
              +'is authorized to execute the command',async()=>{
@@ -466,12 +596,72 @@ describe('CreateNoteWorkflow', ()=>{
         })
         when('the authenticated user is not the same as the target folder '
            +'owner',()=>{
-          todo('returns a fail event due to unauthorized action if '
-             +'the user does not have a create permission in the target '
-             +'folders access control list.')
+          const owner = Id.__unsafe_of(randomUUID())
 
-          todo('returns the original command if the user has a create '
-             +'permission in the target folders access control list.')
+          it_('returns a fail event due to unauthorized action if '
+             +'the user does not have a create permission in the target '
+             +'folders access control list.', async()=>{
+
+            const getSomeACL = async () => __(
+              AccessControlListEntity.__unsafe_of(
+                { list:
+                  [ AccessControl.__unsafe_of(
+                    { user
+                    , permission: Permission.READ
+                    , })
+                  , ]
+                , }),
+              O.some )
+
+            const targetFolder = FolderEntity.__unsafe_of(
+              {owner})
+            const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
+              {targetFolder})
+
+            const task = checkUserAccess
+              (getSomeUID)(getSomeACL)(createNoteInUserFolder)
+            const result = await task()
+
+            const actual = JSON.stringify(result)
+            const expected = __(
+              CreateNoteFailedEvent.UNAUTHORIZED,
+              E.right,
+              JSON.stringify)
+
+            expect(actual).toEqual(expected)
+          })
+
+          it_('returns the original command if the user has a create '
+             +'permission in the target folders access control list.'
+             ,async()=>{
+            const getSomeACL = async () => __(
+              AccessControlListEntity.__unsafe_of(
+                { list:
+                  [ AccessControl.__unsafe_of(
+                    { user
+                    , permission: Permission.CREATE
+                    , })
+                  , ]
+                , }),
+              O.some )
+
+            const targetFolder = FolderEntity.__unsafe_of(
+              {owner})
+            const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
+              {targetFolder })
+
+            const task = checkUserAccess
+              (getSomeUID)(getSomeACL)(createNoteInUserFolder)
+            const result = await task()
+
+            const actual = JSON.stringify(result)
+            const expected = __(
+              createNoteInUserFolder,
+              E.right,
+              JSON.stringify)
+
+            expect(actual).toEqual(expected)
+          })
         })
       })
 
@@ -479,55 +669,12 @@ describe('CreateNoteWorkflow', ()=>{
   })
 
   describe('workflow()', ()=>{
-    when('an error occurs', ()=>{
-      it_('compiles', async ()=>{
-        const id = Id.__unsafe_of(randomUUID())
-        const noteCreated = NoteCreatedEvent.__unsafe_of({id})
-        const notePersistenceAdapter: NotePersistenceAdapter
-          = async (___) => noteCreated
-
-        const aclPersistenceAdapter: ACLAdapter
-          = async () => O.none
-
-        const authAdapter: AuthenticationAdapter
-          = async () => O.none
-
-        const clock = () => {throw new Error()}
-
-        const dependencies: Dependencies
-          = { notePersistenceAdapter
-            , aclPersistenceAdapter
-            , authAdapter
-            , clock
-            }
-
-        const createNote = CreateNoteCommand.__unsafe_of({})
-
-        const workflow = configure(dependencies)
-        const task = __(createNote, workflow)
-        const result = await task()
-
-        const actual = isLeft(result)
-        const expected = true
-
-        expect(actual).toEqual(expected)
-      })
-    })
-
     it_('returns a "authentication error" when the authentication '
        +'adapter throws an error', async ()=>{
-      const id = Id.__unsafe_of(randomUUID())
-      const noteCreated = NoteCreatedEvent.__unsafe_of({id})
-      const notePersistenceAdapter: NotePersistenceAdapter
-        = async (___) => noteCreated
-
-      const aclPersistenceAdapter: ACLAdapter
-        = async () => O.none
-
-      const authAdapter: AuthenticationAdapter
-        = async () => {throw new Error()}
-
-      const clock = () => new Date()
+      const notePersistenceAdapter = persistRandomNote
+      const aclPersistenceAdapter = getSomeRandomACL
+      const clock = getTestTime
+      const authAdapter = errGetSomeRandomUID
 
       const dependencies: Dependencies
         = { notePersistenceAdapter
@@ -550,18 +697,10 @@ describe('CreateNoteWorkflow', ()=>{
 
     it_('returns a "clock error" when the clock adapter throws an error'
        , async ()=>{
-      const id = Id.__unsafe_of(randomUUID())
-      const noteCreated = NoteCreatedEvent.__unsafe_of({id})
-      const notePersistenceAdapter: NotePersistenceAdapter
-        = async (___) => noteCreated
-
-      const aclPersistenceAdapter: ACLAdapter
-        = async () => O.none
-
-      const authAdapter: AuthenticationAdapter
-        = async () => O.none
-
-      const clock = () => {throw new Error()}
+      const notePersistenceAdapter = persistRandomNote
+      const aclPersistenceAdapter = getSomeRandomACL
+      const authAdapter = getSomeRandomUID
+      const clock = errClock
 
       const dependencies: Dependencies
         = { notePersistenceAdapter
@@ -578,6 +717,58 @@ describe('CreateNoteWorkflow', ()=>{
 
       const actual = JSON.stringify(result)
       const expected = __(clockError(), E.left, JSON.stringify)
+
+      expect(actual).toEqual(expected)
+    })
+
+    it_('returns a "note persistence error" when the note persistence '
+       +'adapter throws an error', async ()=>{
+      const notePersistenceAdapter = errPersistNote
+      const aclPersistenceAdapter = getSomeRandomACL
+      const authAdapter = getSomeRandomUID
+      const clock = getTestTime
+
+      const dependencies: Dependencies
+        = { notePersistenceAdapter
+          , aclPersistenceAdapter
+          , authAdapter
+          , clock
+          }
+
+      const createNote = CreateNoteCommand.__unsafe_of({})
+
+      const workflow = configure(dependencies)
+      const task = __(createNote, workflow)
+      const result = await task()
+
+      const actual = JSON.stringify(result)
+      const expected = __(Err.notePersistenceError(), E.left, JSON.stringify)
+
+      expect(actual).toEqual(expected)
+    })
+
+    it_('returns a ACL persistence error when the ACL persistence '
+       +'adapter throws an error', async ()=>{
+      const notePersistenceAdapter = persistRandomNote
+      const aclPersistenceAdapter = errGetSomeRandomACL
+      const authAdapter = getSomeRandomUID
+      const clock = getTestTime
+
+      const dependencies: Dependencies
+        = { notePersistenceAdapter
+          , aclPersistenceAdapter
+          , authAdapter
+          , clock
+          }
+
+      const createNote = CreateNoteCommand.__unsafe_of({})
+
+      const workflow = configure(dependencies)
+      const task = __(createNote, workflow)
+      const result = await task()
+
+      const actual = JSON.stringify(result)
+      const expected = __(Err.aclPersistenceError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })

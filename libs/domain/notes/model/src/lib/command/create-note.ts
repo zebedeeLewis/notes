@@ -14,7 +14,7 @@ export module CreateNoteCommand {
     , name: Str.Value
     , content: Str.Value
     , isImportant: Bool.Value
-    , parent: FolderEntity.Model
+    , targetFolder: FolderEntity.Model
     , creator: Id.Value
     , }
   
@@ -29,7 +29,7 @@ export module CreateNoteCommand {
       , name: __(idStr, Str.__unsafe_of)
       , content: Str.__unsafe_of('default content')
       , isImportant: Bool.__unsafe_of(false)
-      , parent: FolderEntity.__unsafe_of({})
+      , targetFolder: FolderEntity.__unsafe_of({})
       , creator: __(randomUUID(), Id.__unsafe_of)
       , }
   
