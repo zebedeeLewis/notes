@@ -69,3 +69,10 @@ export const transferProp: transferProp
     set(key2),
     apply(m) )
 
+
+type equals
+  =  <M extends TaggedModel<any>>(ma: M)
+  => (mb: M)
+  => boolean
+export const equals: equals
+  = ma => mb => ma === mb

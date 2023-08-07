@@ -1,9 +1,14 @@
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/lib/Option'
 import { matchW } from 'fp-ts/lib/boolean'
-import { and } from 'fp-ts/lib/Predicate'
-import { filter } from 'fp-ts/lib/Array'
-import { pipe as __, flow as _, apply, identity } from 'fp-ts/function'
+import { filter, findFirst } from 'fp-ts/lib/Array'
+import
+{ LazyArg
+, pipe as __
+, flow as _
+, identity
+, apply as p
+, flip } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
 import { Option } from 'fp-ts/lib/Option'
@@ -17,7 +22,9 @@ import { CreateNoteFailedEvent } from '../../event/create-note-failed'
 import { NoteCreatedEvent } from '../../event/note-created'
 import { AccessControlListEntity } from '../../entity/access-control-list'
 import { FolderEntity } from '../../entity/folder'
+import { NoteEntity } from '../../entity/note'
 import { Err } from './error'
+import { AccessQuery, AccessState } from './access'
 
 import Command = CreateNoteCommand.Model
 import Folder = FolderEntity.Model
@@ -26,6 +33,10 @@ import CreateNoteFailed = CreateNoteFailedEvent.Model
 import AccessControlList = AccessControlListEntity.Model
 import set = ImmutableModel.set
 import get = ImmutableModel.get
+import equals = ImmutableModel.equals
+import { randomUUID } from 'crypto'
+
+const lazy = <A>(arg: A) => (() => arg) as LazyArg<A>
 
 export module _CreateNote {
   /*
@@ -131,8 +142,8 @@ export module _CreateNote {
    *       belongs to the parent folder in which the new note will
    *       be created.
    */
-  export type AccessControlListPersistenceAdapter
-    =  (n: Command)
+  export type ACLAdapter
+    =  (i: Id.Value)
     => Promise<Option<AccessControlList>>
 
   /**
@@ -156,7 +167,7 @@ export module _CreateNote {
    */
   export interface Dependencies
     { notePersistenceAdapter: NotePersistenceAdapter
-    , aclPersistenceAdapter: AccessControlListPersistenceAdapter
+    , aclPersistenceAdapter: ACLAdapter
     , authAdapter: AuthenticationAdapter
     , clock: clock
     }
@@ -170,11 +181,11 @@ export module _CreateNote {
    *     adapter throws an error
    *   - or the result of the adapter call.
    */
-  type safelyCallAclAdapter
-    =  (a: AccessControlListPersistenceAdapter)
-    => (c: Command)
+  type safelyCallACLAdapter
+    =  (a: ACLAdapter)
+    => (i: Id.Value)
     => TE.TaskEither<Err.ACLPersistenceError, Option<AccessControlList>>
-  export const safelyCallAclAdapter: safelyCallAclAdapter
+  export const safelyCallACLAdapter: safelyCallACLAdapter
     = adapter => TE.tryCatchK(adapter, Err.aclPersistenceError)
 
   const authResultCase
@@ -184,38 +195,38 @@ export module _CreateNote {
       , }).matchStrict<TE.TaskEither<WorkflowError, CreateNoteFailed|Command>>
 
   /**
-   * A function that determines if a given user is authorized to create
-   * a note by checking if the user owns the target folder.
+   * A function that executes the given access query.
+   *
+   * If the user is the owner of the resource under query, then he is
+   * authorized.
    *
    * @returns
-   *   - one of
-   *     - the original command if the "user id" is the same as the
-   *       parent folders "owner id"
-   *     - a create note failed event if the user id is not the parent
-   *       folders owner id
+   * - One of
+   *   - an authorized query state
+   *   - an unauthorized query state
    */
   type checkUserAccessViaFolderOwner
-    =  (i: Id.Value)
-    => (c: Command)
-    => CreateNoteFailed|Command
+    =  (q: AccessQuery.Model)
+    => AccessState.AuthorizationState
   export const checkUserAccessViaFolderOwner: checkUserAccessViaFolderOwner
-    = userId => command => __(
-      command,
-      get('parent'),
+    = query => __(
+      query,
+      get('resource'),
       get('owner'),
-      ownerId=>ownerId===userId, matchW(
-        ()=>CreateNoteFailedEvent.UNAUTHORIZED_ACTION,
-        ()=>command ))
+      equals(__(query, get('user'))),
+      matchW(
+        lazy(AccessState.unauthorized({query})),
+        lazy(AccessState.authorized({query})) ))
 
   /**
    * A function that reduces a list of access controls to only those
    * matching the given user id.
    */
-  type reduceToUserAcls
+  type reduceToUserACLs
     =  (i: Id.Value)
     => (l: Array<AccessControl.Value>)
     => Array<AccessControl.Value>
-  export const reduceToUserAcls: reduceToUserAcls
+  export const reduceToUserACLs: reduceToUserACLs
     = userId => filter(_(get('user'), id=>id===userId))
 
   /**
@@ -227,30 +238,94 @@ export module _CreateNote {
    */
   type hasPermission
     =  (p: Permission.Value)
-    => (i: Id.Value)
     => (a: Array<AccessControl.Value>)
     => boolean
   export const hasPermission: hasPermission
-    = userId => permission => acl => false
+    = p => _(
+      findFirst(_(get('permission'), equals(p))),
+      O.match(
+        lazy(false),
+        lazy(true) ))
 
 
   /**
    * A function that determines if the given command is authorized
    * for the given user, according to the given "access control list".
+   *
+   * If the user has a create permission in the resources ACL then he is
+   * authorized.
+   *
+   * @returns
+   * - One of
+   *   - an authorized query state
+   *   - an unauthorized query state
    */
   type checkUserAccessViaACL
-    =  (i: Id.Value)
-    => (c: Command)
-    => (a: AccessControlList)
-    => CreateNoteFailed|Command
+    =  (a2: ACLAdapter)
+    => (q: AccessQuery.Model)
+    => TaskEither<Err.ACLPersistenceError, AccessState.AuthorizationState>
   export const checkUserAccessViaACL: checkUserAccessViaACL
-    = userId => c => _(
-      get('list'),
-      reduceToUserAcls(userId),
-      __(userId, hasPermission(Permission.CREATE)),
-      matchW(
-        ()=>CreateNoteFailedEvent.UNAUTHORIZED_ACTION,
-        ()=>c ))
+    = a2 => query => __(
+      query,
+      get('resource'),
+      get('id'),
+      safelyCallACLAdapter(a2),
+      TE.map(O.matchW(
+        lazy(AccessState.unauthorized({query: query})),
+        _( get('list'),
+           __(query, get('user'), reduceToUserACLs),
+           hasPermission(Permission.CREATE),
+           matchW(
+             lazy(AccessState.unauthorized({query})),
+             lazy(AccessState.authorized({query})) )))))
+
+  /**
+   * TODO!!!
+   */
+  type openUserAccessQueryOnFolder
+    =  (u: Id.Value)
+    => (f: Folder)
+    => AccessQuery.Model
+  const openUserAccessQueryOnFolder: openUserAccessQueryOnFolder
+    = u => f => __(
+      AccessQuery.of({}),
+      set<AccessQuery.Model, 'resource'>('resource')(f),
+      set<AccessQuery.Model, 'user'>('user')(u))
+
+  type targetLocation
+    =  (c: Command)
+    => Folder
+  const targetLocation: targetLocation
+    = get('parent')
+
+  /**
+   * TODO!!!
+   *
+   * A function that executes the given access query.
+   *
+   * If the user has create access to the resource under query or if
+   * the user is the owner of the resource under query, then he is
+   * authorized.
+   *
+   * @returns
+   * - Either an ACL persistence error if the ACL adapter throws
+   * - Or one of
+   *   - an authorized query state
+   *   - an unauthorized query state
+   */
+  type executeAccessQuery
+    =  (a2: ACLAdapter)
+    => (q: AccessQuery.Model)
+    => TaskEither<Err.ACLPersistenceError, AccessState.AuthorizationState>
+  export const executeAccessQuery: executeAccessQuery
+    = a2 => _(
+      checkUserAccessViaFolderOwner,
+      AccessState.switchCase({
+        AccessUnauthorized: _(
+          get('query'),
+          checkUserAccessViaACL(a2) ),
+        AccessAuthorized: TE.right  }))
+
 
   /**
    * TODO!!!
@@ -258,35 +333,49 @@ export module _CreateNote {
    * A function that verifies that a user is authorized to perform the
    * given command.
    *
+   * If the user has create access to the parent folder specified in the
+   * given command or if the user is the owner of the parent folder, then
+   * he is authorized.
+   *
    * @returns
-   *   - Either one of
-   *     - "access control list persistence error" if an error
-   *       occurs while retreiving the access control list from
-   *       persistent storage.
-   *     - the received "authentication error" if such an error was
-   *       passed as the "authentication result" argument.
-   *   - Or one of:
-   *     - (TODO) a "create note failed event" due to "unauthorized action"
-   *       if the user is not authorized to execute the command
-   *     - the given "create note failed event" if the authentication
-   *       result parameter is a "create note failed event".
-   *     - The original command given to the function if the user is
-   *       authorized to execute the command.
+   * - Either one of
+   *   - "access control list persistence error" if an error
+   *     occurs while retreiving the access control list from
+   *     persistent storage.
+   *   - "authentication error" an error occurs within the
+   *     authentication adapter.
+   * - Or one of
+   *   - a "create note failed event" due to "unauthenticated user"
+   *     if there is no authenticated user.
+   *   - a "create note failed event" due to "unauthorized action"
+   *     if the user is not authorized to execute the command
+   *   - The original command given to the function if the user is
+   *     authorized to execute the command.
+   *
    */
   type checkUserAccess
-    =  (a: AccessControlListPersistenceAdapter)
+    =  (a1: AuthenticationAdapter)
+    => (a2: ACLAdapter)
     => (c: Command)
-    => (i: TaskEither<Err.AuthenticationError, CreateNoteFailed|Id.Value>)
     => TaskEither<WorkflowError, CreateNoteFailed|Command>
   export const checkUserAccess: checkUserAccess
-    = getAcl => command => TE.chain(authResultCase({
-      CreateNoteFailedEvent: TE.right,
-      IdValue: (userId)=> __(
-        command,
-        safelyCallAclAdapter(getAcl),
-        TE.map(O.match(
-          ()=>checkUserAccessViaFolderOwner(userId)(command),
-          checkUserAccessViaACL(userId)(command) )))}))
+    = a1 => a2 => c => __(
+      TE.tryCatch(a1, Err.authenticationError),
+      TE.chainW(O.matchW(
+        lazy(TE.right(CreateNoteFailedEvent.UNAUTHENTICATED)),
+        _( openUserAccessQueryOnFolder, p(targetLocation(c)),
+           x=>{
+             // console.log('[[DEBUG]]', JSON.stringify(x,null, 2))
+             // console.log('[[DEBUG A]]',
+             //   __(x, get('resource'), get('owner'), JSON.stringify))
+             console.log('[[DEBUG B]]', get('user')(x))
+             console.log('[[DEBUG C]]', randomUUID())
+             return x
+           },
+           executeAccessQuery(a2),
+           TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
+             AccessUnauthorized: lazy(CreateNoteFailedEvent.UNAUTHORIZED),
+             AccessAuthorized: lazy(c) }))))))
 
   /**
    * A function that sets the given event time using the time provided
@@ -335,7 +424,7 @@ export module _CreateNote {
     = adapter => __(
       TE.tryCatch(adapter, Err.authenticationError),
       TE.map(O.matchW(
-        ()=>CreateNoteFailedEvent.AUTHENTICATION_FAILURE,
+        lazy(CreateNoteFailedEvent.UNAUTHENTICATED),
         identity)) )
 
   /**
@@ -352,7 +441,7 @@ export module _CreateNote {
        , authAdapter
        , aclPersistenceAdapter
        , clock
-       }) => command => {
+       }) => c => {
 
       const safelyCallNotePersistenceAdapter
         = TE.tryCatchK(
@@ -362,15 +451,13 @@ export module _CreateNote {
       const persistCreateNote
         = TE.chainW(safelyCallNotePersistenceAdapter)
 
-      const isAuthorizedAction
-        = checkUserAccess(aclPersistenceAdapter)
+      const checkUserAccesForCommand
+        = checkUserAccess(authAdapter)(aclPersistenceAdapter)
 
       return __(
-       getUserId(authAdapter),
-       isAuthorizedAction(command),
-       persistCreateNote,
-       setEventTimeUsingClock(clock),
-       x=>x,
-       /*setOwner*/ )
+        checkUserAccesForCommand(c),
+        persistCreateNote,
+        setEventTimeUsingClock(clock),
+        /*setOwner*/ )
     }
 }

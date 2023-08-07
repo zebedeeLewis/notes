@@ -38,13 +38,13 @@ export module CreateNoteFailedEvent {
     = factory<Schema>(
       DEFAULT_VALUE )
 
-  export const AUTHENTICATION_FAILURE = __(
+  export const UNAUTHENTICATED = __(
     'AuthenticationFailure',
     Select.__unsafe_of<Reason>,
     set<Model, 'reason'>('reason'),
     apply(__unsafe_of({})) )
 
-  export const UNAUTHORIZED_ACTION = __(
+  export const UNAUTHORIZED = __(
     'UnauthorizedAction',
     Select.__unsafe_of<Reason>,
     set<Model, 'reason'>('reason'),
