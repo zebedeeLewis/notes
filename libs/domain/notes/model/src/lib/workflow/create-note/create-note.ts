@@ -22,7 +22,6 @@ import { CreateNoteFailedEvent } from '../../event/create-note-failed'
 import { NoteCreatedEvent } from '../../event/note-created'
 import { AccessControlListEntity } from '../../entity/access-control-list'
 import { FolderEntity } from '../../entity/folder'
-import { NoteEntity } from '../../entity/note'
 import { Err } from './error'
 import { AccessQuery, AccessState } from './access'
 
@@ -34,7 +33,6 @@ import AccessControlList = AccessControlListEntity.Model
 import set = ImmutableModel.set
 import get = ImmutableModel.get
 import equals = ImmutableModel.equals
-import { randomUUID } from 'crypto'
 
 const lazy = <A>(arg: A) => (() => arg) as LazyArg<A>
 
@@ -187,6 +185,12 @@ export module _CreateNote {
     => TE.TaskEither<Err.ACLPersistenceError, Option<AccessControlList>>
   export const safelyCallACLAdapter: safelyCallACLAdapter
     = adapter => TE.tryCatchK(adapter, Err.aclPersistenceError)
+
+  type safelyCallAuthenticationAdapter
+    =  (a1: AuthenticationAdapter)
+    => TaskEither<Err.AuthenticationError, Option<Id.Value>>
+  export const safelyCallAuthenticationAdapter: safelyCallAuthenticationAdapter
+    = a1 => TE.tryCatch(a1, Err.authenticationError)
 
   const authResultCase
     = makeADT(ImmutableModel.Tag)(
@@ -360,7 +364,7 @@ export module _CreateNote {
     => TaskEither<WorkflowError, CreateNoteFailed|Command>
   export const checkUserAccess: checkUserAccess
     = a1 => a2 => c => __(
-      TE.tryCatch(a1, Err.authenticationError),
+      safelyCallAuthenticationAdapter(a1),
       TE.chainW(O.matchW(
         lazy(TE.right(CreateNoteFailedEvent.UNAUTHENTICATED)),
         _( openUserAccessQueryOnFolder, p(targetLocation(c)),
