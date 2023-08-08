@@ -6,7 +6,11 @@ import { pipe as __, flow as _ } from 'fp-ts/function'
 
 import { clockError } from '@notes/utils/clock'
 import { it_, when, given, and, todo } from '@notes/utils/test'
-import { Id, Time, Select, AccessControl, Permission } from '@notes/domain/shared/value-object'
+import
+{ Id
+, Time
+, AccessControl
+, Permission } from '@notes/domain/shared/value-object'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { CreateNoteCommand } from '../../command/create-note'
 import { NoteCreatedEvent } from '../../event/note-created'
@@ -16,7 +20,6 @@ import { FolderEntity } from '../../entity/folder'
 import { _CreateNote } from './create-note'
 import { Err } from './error'
 
-import getUserId = _CreateNote.getUserId
 import configure = _CreateNote.configure
 import openUserAccessQueryOnFolder = _CreateNote.openUserAccessQueryOnFolder
 import hasPermission = _CreateNote.hasPermission
@@ -28,9 +31,6 @@ import checkUserAccessViaACL = _CreateNote.checkUserAccessViaACL
 import checkUserAccess = _CreateNote.checkUserAccess
 import setEventTimeUsingClock = _CreateNote.setEventTimeUsingClock
 import Dependencies = _CreateNote.Dependencies
-import ACLAdapter = _CreateNote.ACLAdapter
-import AuthAdapter = _CreateNote.AuthAdapter
-import NotePersistenceAdapter = _CreateNote.NotePersistenceAdapter
 import authenticationError = Err.authenticationError
 import get = ImmutableModel.get
 import { AccessQuery, AccessState } from './access'
@@ -224,56 +224,6 @@ describe('CreateNoteWorkflow', ()=>{
 
       const actual = reduceToUserACLs(user)(ACLs)
       const expected = []
-
-      expect(actual).toEqual(expected)
-    })
-  })
-
-  describe('getUserId()', ()=>{
-    it_('returns an "authentication error" if any error occur in the '
-       +'"authentication adapter" function', async ()=>{
-      const adapter = async () => {throw new Error()}
-      const task = getUserId(adapter)
-      const result = await task()
-
-      const actual = JSON.stringify(result)
-      const expected = __(Err.authenticationError(), E.left, JSON.stringify)
-
-      expect(actual).toEqual(expected)
-    })
-
-    it_('returns a "create note failed event" due to '
-       +'"authentication failure" if the "authentication adapter" '
-       +'does not return an id', async ()=>{
-      const adapter = async () => O.none
-
-      const task = getUserId(adapter)
-      const result = await task()
-      const actual = JSON.stringify(result)
-
-      const reason = Select.__unsafe_of<CreateNoteFailedEvent.Reason>(
-        'AuthenticationFailure')
-      const expected = __(
-        CreateNoteFailedEvent.__unsafe_of({reason}),
-        E.right,
-        JSON.stringify )
-
-      expect(actual).toEqual(expected)
-    })
-
-    it_('returns the id produced by the  "authentication adapter"'
-       , async ()=>{
-      const id = Id.__unsafe_of(randomUUID())
-      const adapter = async () => O.some(id)
-
-      const task = getUserId(adapter)
-      const result = await task()
-
-      const actual = JSON.stringify(result)
-
-      const expected = __(
-        E.right(id),
-        JSON.stringify )
 
       expect(actual).toEqual(expected)
     })
@@ -771,6 +721,9 @@ describe('CreateNoteWorkflow', ()=>{
       const expected = __(Err.aclPersistenceError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
+    })
+
+    given('that no error occurs', ()=>{
     })
   })
 })

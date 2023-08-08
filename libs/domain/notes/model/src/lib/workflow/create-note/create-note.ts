@@ -6,7 +6,6 @@ import
 { LazyArg
 , pipe as __
 , flow as _
-, identity
 , apply as p
 , } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
@@ -36,7 +35,6 @@ import NoteCreated = NoteCreatedEvent.Model
 import CreateNoteFailed = CreateNoteFailedEvent.Model
 import AccessControlList = AccessControlListEntity.Model
 import set = ImmutableModel.set
-import transferProp = ImmutableModel.transferProp
 import get = ImmutableModel.get
 import equals = ImmutableModel.equals
 
@@ -424,28 +422,6 @@ export module _CreateNote {
         , NoteCreatedEvent:
             set<NoteCreated, 'event_time'>('event_time')(time)
         , })(event)) )
-
-  /**
-   * A function that tries to get the user id of the currently
-   * authenticated user.
-   *
-   * @returns
-   *   - Either
-   *     - an "authentication error" if an error occurs within the
-   *       given authentication adapter
-   *     - one of
-   *       - a "create note failed event" the user is not authenticated
-   *       - the user id of the authenticated user
-   */
-  type getUserId
-    =  (a1: AuthAdapter)
-    => TaskEither<Err.AuthenticationError, CreateNoteFailed|Id.Value>
-  export const getUserId: getUserId
-    = a1 => __(
-      TE.tryCatch(a1, Err.authenticationError),
-      TE.map(O.matchW(
-        lazy(CreateNoteFailedEvent.UNAUTHENTICATED),
-        identity )))
 
   /**
    * TODO!!!
