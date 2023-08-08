@@ -29,6 +29,11 @@ import { FolderEntity } from '../../entity/folder'
 import { Err } from './error'
 import { AccessQuery, AccessState } from './access'
 
+import TARGET_NOT_FOUND_EVENT = CreateNoteFailedEvent.TARGET_NOT_FOUND
+import UNAUTHENTICATED_USER_EVENT = CreateNoteFailedEvent.UNAUTHENTICATED
+import UNAUTHORIZED_COMMAND_EVENT
+  = CreateNoteFailedEvent.UNAUTHORIZED
+
 import Command = CreateNoteCommand.Model
 import Folder = FolderEntity.Model
 import NoteCreated = NoteCreatedEvent.Model
@@ -60,17 +65,22 @@ export module _CreateNote {
    *
    * If an error occurs in the "clock adapter" it returns a "clock
    * error".
+   *
+   * If an error occurs in the folder adapter it returns a folder
+   * retrieval error.
    */
   export type WorkflowError
-    = Err.NotePersistenceError
+    = Err.PersistNoteError
     | Err.UserPersistenceError
     | Err.ACLPersistenceError
     | Err.AuthenticationError
+    | Err.RetrieveFolderError
     | ClockError
 
   export const WorkflowError: ADT<WorkflowError, ImmutableModel.Tag>
     = makeADT(ImmutableModel.Tag)(
-      { NotePersistenceError: ofType<Err.NotePersistenceError>()
+      { PersistNoteError: ofType<Err.PersistNoteError>()
+      , RetrieveFolderError: ofType<Err.RetrieveFolderError>()
       , AuthenticationError: ofType<Err.AuthenticationError>()
       , ACLPersistenceError: ofType<Err.ACLPersistenceError>()
       , UserPersistenceError: ofType<Err.UserPersistenceError>()
@@ -123,7 +133,7 @@ export module _CreateNote {
    *   - a NoteCreatedEvent containing the information about the newly
    *     created note.
    */
-  export type NotePersistenceAdapter
+  export type PersistNoteAdapter
     =  (n: Command)
     => Promise<NoteCreated>
 
@@ -135,12 +145,43 @@ export module _CreateNote {
    * - or the result of calling the adapter which is assumed to
    *   be a note created event.
    */
-  type safelyCallNotePersistenceAdapter
-    =  (a: NotePersistenceAdapter)
+  type safelyCallPersistNoteAdapter
+    =  (a: PersistNoteAdapter)
     => (c: Command)
-    => TaskEither<Err.NotePersistenceError, NoteCreated>
-  const safelyCallNotePersistenceAdapter: safelyCallNotePersistenceAdapter
-    = adapter => TE.tryCatchK(adapter, Err.notePersistenceError)
+    => TaskEither<Err.PersistNoteError, NoteCreated>
+  const safelyCallPersistNoteAdapter: safelyCallPersistNoteAdapter
+    = adapter => TE.tryCatchK(adapter, Err.persistNoteError)
+
+  /**
+   * A function that gets a folder entity from persistent storage
+   *
+   * Note:
+   * any error that occurs withing this function will be intercepted
+   * and a "folder persistence error" object will be returned from
+   * the workflow.
+   *
+   * @returns
+   * - one of
+   *   - the folder entity that is associated with the given id
+   *   - nothing if no associated folder was found.
+   */
+  export type RetrieveFolderAdapter
+    =  (i: Id.Value)
+    => Promise<O.Option<Folder>>
+
+  /**
+   * A function that ensures that the retrieve folder adapter never throws.
+   *
+   * @returns
+   * - Either a retrieve folder error if the adapter throws
+   * - or the result of calling the adapter
+   */
+  type safelyCallRetrieveFolderAdapter
+    =  (a3: RetrieveFolderAdapter)
+    => (i: Id.Value)
+    => TaskEither<Err.RetrieveFolderError, Option<Folder>>
+  const safelyCallRetrieveFolderAdapter: safelyCallRetrieveFolderAdapter
+    = a3 => TE.tryCatchK(a3, Err.retrieveFolderError)
 
   /**
    * A function that takes care of retreving the access control list
@@ -214,7 +255,8 @@ export module _CreateNote {
    * An object containing dependencies needed by the workflow function
    */
   export interface Dependencies
-    { notePersistenceAdapter: NotePersistenceAdapter
+    { persistNoteAdapter: PersistNoteAdapter
+    , retrieveFolderAdapter: RetrieveFolderAdapter
     , aclPersistenceAdapter: ACLAdapter
     , authAdapter: AuthAdapter
     , clock: clock
@@ -318,11 +360,11 @@ export module _CreateNote {
    * @returns
    * - a new access query
    */
-  type openUserAccessQueryOnFolder
+  type openFolderAccessQueryForUser
     =  (u: Id.Value)
     => (f: Folder)
     => AccessQuery.Model
-  export const openUserAccessQueryOnFolder: openUserAccessQueryOnFolder
+  export const openFolderAccessQueryForUser: openFolderAccessQueryForUser
     = u => f => __(
       AccessQuery.of({}),
       set<AccessQuery.Model, 'resource'>('resource')(f),
@@ -349,9 +391,7 @@ export module _CreateNote {
     = a2 => _(
       checkUserAccessViaFolderOwner,
       AccessState.switchCase({
-        AccessUnauthorized: _(
-          get('query'),
-          checkUserAccessViaACL(a2) ),
+        AccessUnauthorized: _(get('query'), checkUserAccessViaACL(a2)),
         AccessAuthorized: TE.right  }))
 
 
@@ -382,18 +422,31 @@ export module _CreateNote {
   type checkUserAccess
     =  (a1: AuthAdapter)
     => (a2: ACLAdapter)
+    => (a3: RetrieveFolderAdapter)
     => (c: Command)
     => TaskEither<WorkflowError, CreateNoteFailed|Command>
   export const checkUserAccess: checkUserAccess
-    = a1 => a2 => c => __(
+    = a1 => a2 => a3 => command => __(
       safelyCallAuthAdapter(a1),
-      TE.chainW(O.matchW(
-        lazy(TE.right(CreateNoteFailedEvent.UNAUTHENTICATED)),
-        _( openUserAccessQueryOnFolder, __(c, get('targetFolder'), p),
-           executeAccessQuery(a2),
-           TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
-             AccessUnauthorized: lazy(CreateNoteFailedEvent.UNAUTHORIZED),
-             AccessAuthorized: lazy(c) }))))))
+      TE.bindTo('maybeUID'),
+      TE.bindW('maybeTargetFolder', lazy(__(
+        command,
+        get('targetFolder'),
+        safelyCallRetrieveFolderAdapter(a3) ))),
+
+      TE.chainW(({maybeUID, maybeTargetFolder})=>__(
+        maybeUID,
+        O.matchW(
+          lazy(TE.right(UNAUTHENTICATED_USER_EVENT)),
+          uid => __(
+            maybeTargetFolder,
+            O.matchW(
+              lazy(TE.right(TARGET_NOT_FOUND_EVENT)),
+              _(openFolderAccessQueryForUser(uid),
+                executeAccessQuery(a2),
+                TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
+                  AccessUnauthorized: lazy(UNAUTHORIZED_COMMAND_EVENT),
+                  AccessAuthorized: lazy(command) })))))))))
 
   /**
    * A function that sets the given event time using the time provided
@@ -433,7 +486,8 @@ export module _CreateNote {
     =  (d: Dependencies)
     => workflow
   export const configure: configure
-    = ({ notePersistenceAdapter
+    = ({ persistNoteAdapter
+       , retrieveFolderAdapter
        , authAdapter
        , aclPersistenceAdapter
        , clock
@@ -441,11 +495,14 @@ export module _CreateNote {
     ) => c => {
       const persistCreateNote
         = TE.chainW(__(
-          notePersistenceAdapter,
-          safelyCallNotePersistenceAdapter))
+          persistNoteAdapter,
+          safelyCallPersistNoteAdapter))
 
       const checkUserAccesForCommand
-        = checkUserAccess(authAdapter)(aclPersistenceAdapter)
+        = checkUserAccess
+          (authAdapter)
+          (aclPersistenceAdapter)
+          (retrieveFolderAdapter)
 
       return __(
         checkUserAccesForCommand(c),

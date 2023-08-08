@@ -21,7 +21,7 @@ import { _CreateNote } from './create-note'
 import { Err } from './error'
 
 import configure = _CreateNote.configure
-import openUserAccessQueryOnFolder = _CreateNote.openUserAccessQueryOnFolder
+import openFolderAccessQueryForUser = _CreateNote.openFolderAccessQueryForUser
 import hasPermission = _CreateNote.hasPermission
 import reduceToUserACLs = _CreateNote.reduceToUserACLs
 import executeAccessQuery = _CreateNote.executeAccessQuery
@@ -53,6 +53,10 @@ describe('CreateNoteWorkflow', ()=>{
   const errGetSomeRandomUID = async () => {throw new Error()}
   const getSomeRandomUID = async () =>  __(
     randomUUID(), Id.__unsafe_of, O.some)
+
+  const errGetSomeRandomFolder = async () => {throw new Error()}
+  const getSomeRandomFolder = async () => __(
+    FolderEntity.__unsafe_of({}), O.some)
 
   const createNote = CreateNoteCommand.__unsafe_of({})
 
@@ -109,13 +113,13 @@ describe('CreateNoteWorkflow', ()=>{
     })
   })
 
-  describe('openUserAccessQueryOnFolder()',()=>{
+  describe('openFolderAccessQueryForUser()',()=>{
     it_('returns a new access query with the given user id and the resource '
        +'set to the given folder',()=>{
       const user = Id.__unsafe_of(randomUUID())
       const resource = FolderEntity.__unsafe_of({})
 
-      const actual = openUserAccessQueryOnFolder(user)(resource)
+      const actual = openFolderAccessQueryForUser(user)(resource)
       const expected = AccessQuery.of({user, resource})
 
       expect(actual).toEqual(expected)
@@ -466,8 +470,13 @@ describe('CreateNoteWorkflow', ()=>{
 
       const errAuthAdapter = () => {throw new Error()}
 
-      const task = checkUserAccess
-        (errAuthAdapter)(getSomeRandomACL)(createNote)
+      const task
+        = checkUserAccess
+          (errAuthAdapter)
+          (getSomeRandomACL)
+          (getSomeRandomFolder)
+          (createNote)
+
       const result = await task()
 
       const actual = JSON.stringify(result)
@@ -483,8 +492,13 @@ describe('CreateNoteWorkflow', ()=>{
        +'control list persistence adapter throws',async()=>{
       const errGetACL = () => {throw new Error()}
 
-      const task = checkUserAccess
-        (getSomeRandomUID)(errGetACL)(createNote)
+      const task
+        = checkUserAccess
+          (getSomeRandomUID)
+          (errGetACL)
+          (getSomeRandomFolder)
+          (createNote)
+
       const result = await task()
 
       const actual = JSON.stringify(result)
@@ -503,8 +517,13 @@ describe('CreateNoteWorkflow', ()=>{
         const getNoneUID = async () =>  O.none
 
         it_('returns a fail event due to unauthenticated user',async()=>{
-          const task = checkUserAccess
-            (getNoneUID)(getSomeRandomACL)(createNote)
+          const task
+            = checkUserAccess
+              (getNoneUID)
+              (getSomeRandomACL)
+              (getSomeRandomFolder)
+              (createNote)
+
           const result = await task()
 
           const actual = JSON.stringify(result)
@@ -524,15 +543,22 @@ describe('CreateNoteWorkflow', ()=>{
            +'owner'
            ,()=>{
           const owner = user
-          const targetFolder = FolderEntity.__unsafe_of(
-            {owner})
+          const getSomeFolder = async () => __(
+            FolderEntity.__unsafe_of({owner}), O.some)
+
+          const targetFolder = Id.__unsafe_of(randomUUID())
           const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
             {targetFolder})
 
           it_('returns the original command indicating that the user '
              +'is authorized to execute the command',async()=>{
-            const task = checkUserAccess
-              (getSomeUID)(getSomeRandomACL)(createNoteInUserFolder)
+            const task
+              = checkUserAccess
+                (getSomeUID)
+                (getSomeRandomACL)
+                (getSomeFolder)
+                (createNoteInUserFolder)
+
             const result = await task()
 
             const actual = JSON.stringify(result)
@@ -563,13 +589,17 @@ describe('CreateNoteWorkflow', ()=>{
                 , }),
               O.some )
 
-            const targetFolder = FolderEntity.__unsafe_of(
-              {owner})
+            const targetFolder = Id.__unsafe_of(randomUUID())
             const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
               {targetFolder})
 
-            const task = checkUserAccess
-              (getSomeUID)(getSomeACL)(createNoteInUserFolder)
+            const task
+              = checkUserAccess
+                (getSomeUID)
+                (getSomeACL)
+                (getSomeRandomFolder)
+                (createNoteInUserFolder)
+
             const result = await task()
 
             const actual = JSON.stringify(result)
@@ -595,13 +625,17 @@ describe('CreateNoteWorkflow', ()=>{
                 , }),
               O.some )
 
-            const targetFolder = FolderEntity.__unsafe_of(
-              {owner})
+            const targetFolder = Id.__unsafe_of(randomUUID())
             const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
               {targetFolder })
 
-            const task = checkUserAccess
-              (getSomeUID)(getSomeACL)(createNoteInUserFolder)
+            const task
+              = checkUserAccess
+                (getSomeUID)
+                (getSomeACL)
+                (getSomeRandomFolder)
+                (createNoteInUserFolder)
+
             const result = await task()
 
             const actual = JSON.stringify(result)
@@ -621,13 +655,15 @@ describe('CreateNoteWorkflow', ()=>{
   describe('workflow()', ()=>{
     it_('returns a "authentication error" when the authentication '
        +'adapter throws an error', async ()=>{
-      const notePersistenceAdapter = persistRandomNote
+      const persistNoteAdapter = persistRandomNote
       const aclPersistenceAdapter = getSomeRandomACL
+      const retrieveFolderAdapter = getSomeRandomFolder
       const clock = getTestTime
       const authAdapter = errGetSomeRandomUID
 
       const dependencies: Dependencies
-        = { notePersistenceAdapter
+        = { persistNoteAdapter
+          , retrieveFolderAdapter
           , aclPersistenceAdapter
           , authAdapter
           , clock
@@ -647,13 +683,15 @@ describe('CreateNoteWorkflow', ()=>{
 
     it_('returns a "clock error" when the clock adapter throws an error'
        , async ()=>{
-      const notePersistenceAdapter = persistRandomNote
+      const persistNoteAdapter = persistRandomNote
+      const retrieveFolderAdapter = getSomeRandomFolder
       const aclPersistenceAdapter = getSomeRandomACL
       const authAdapter = getSomeRandomUID
       const clock = errClock
 
       const dependencies: Dependencies
-        = { notePersistenceAdapter
+        = { persistNoteAdapter
+          , retrieveFolderAdapter
           , aclPersistenceAdapter
           , authAdapter
           , clock
@@ -673,13 +711,15 @@ describe('CreateNoteWorkflow', ()=>{
 
     it_('returns a "note persistence error" when the note persistence '
        +'adapter throws an error', async ()=>{
-      const notePersistenceAdapter = errPersistNote
+      const persistNoteAdapter = errPersistNote
+      const retrieveFolderAdapter = getSomeRandomFolder
       const aclPersistenceAdapter = getSomeRandomACL
       const authAdapter = getSomeRandomUID
       const clock = getTestTime
 
       const dependencies: Dependencies
-        = { notePersistenceAdapter
+        = { persistNoteAdapter
+          , retrieveFolderAdapter
           , aclPersistenceAdapter
           , authAdapter
           , clock
@@ -692,20 +732,22 @@ describe('CreateNoteWorkflow', ()=>{
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(Err.notePersistenceError(), E.left, JSON.stringify)
+      const expected = __(Err.persistNoteError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })
 
     it_('returns a ACL persistence error when the ACL persistence '
        +'adapter throws an error', async ()=>{
-      const notePersistenceAdapter = persistRandomNote
+      const persistNoteAdapter = persistRandomNote
+      const retrieveFolderAdapter = getSomeRandomFolder
       const aclPersistenceAdapter = errGetSomeRandomACL
       const authAdapter = getSomeRandomUID
       const clock = getTestTime
 
       const dependencies: Dependencies
-        = { notePersistenceAdapter
+        = { persistNoteAdapter
+          , retrieveFolderAdapter
           , aclPersistenceAdapter
           , authAdapter
           , clock

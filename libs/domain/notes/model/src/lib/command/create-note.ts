@@ -2,7 +2,6 @@ import {randomUUID} from 'crypto'
 import { flow as _, pipe as __ } from 'fp-ts/lib/function'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Str, Bool, Id } from '@notes/domain/shared/value-object'
-import { FolderEntity } from '../entity/folder'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
@@ -14,7 +13,7 @@ export module CreateNoteCommand {
     , name: Str.Value
     , content: Str.Value
     , isImportant: Bool.Value
-    , targetFolder: FolderEntity.Model
+    , targetFolder: Id.Value
     , creator: Id.Value
     , }
   
@@ -29,7 +28,7 @@ export module CreateNoteCommand {
       , name: __(idStr, Str.__unsafe_of)
       , content: Str.__unsafe_of('default content')
       , isImportant: Bool.__unsafe_of(false)
-      , targetFolder: FolderEntity.__unsafe_of({})
+      , targetFolder: __(randomUUID(), Id.__unsafe_of)
       , creator: __(randomUUID(), Id.__unsafe_of)
       , }
   

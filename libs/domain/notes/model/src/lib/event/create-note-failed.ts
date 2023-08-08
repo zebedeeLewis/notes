@@ -11,6 +11,7 @@ export module CreateNoteFailedEvent {
   export type Reason
     = 'AuthenticationFailure'
     | 'UnauthorizedAction'
+    | 'TargetNotFound'
 
   interface Schema
     { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
@@ -46,6 +47,12 @@ export module CreateNoteFailedEvent {
 
   export const UNAUTHORIZED = __(
     'UnauthorizedAction',
+    Select.__unsafe_of<Reason>,
+    set<Model, 'reason'>('reason'),
+    apply(__unsafe_of({})) )
+
+  export const TARGET_NOT_FOUND = __(
+    'TargetNotFound',
     Select.__unsafe_of<Reason>,
     set<Model, 'reason'>('reason'),
     apply(__unsafe_of({})) )

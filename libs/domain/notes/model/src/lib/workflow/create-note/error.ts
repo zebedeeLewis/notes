@@ -4,18 +4,31 @@ import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
 
 export module Err {
-  export type NotePersistenceError
+  export type RetrieveFolderError
     = TaggedModel<
-      { [ImmutableModel.Tag]: 'NotePersistenceError' }
+      { [ImmutableModel.Tag]: 'RetrieveFolderError' }
     >
 
-  type notePersistenceError
+  type retrieveFolderError
     =  ()
-    => NotePersistenceError
-  export const notePersistenceError: notePersistenceError
+    => RetrieveFolderError
+  export const retrieveFolderError: retrieveFolderError
     = () => factory<
-        {[ImmutableModel.Tag]: 'NotePersistenceError'}
-      >({[ImmutableModel.Tag]: 'NotePersistenceError'})({})
+        {[ImmutableModel.Tag]: 'RetrieveFolderError'}
+      >({[ImmutableModel.Tag]: 'RetrieveFolderError'})({})
+
+  export type PersistNoteError
+    = TaggedModel<
+      { [ImmutableModel.Tag]: 'PersistNoteError' }
+    >
+
+  type persistNoteError
+    =  ()
+    => PersistNoteError
+  export const persistNoteError: persistNoteError
+    = () => factory<
+        {[ImmutableModel.Tag]: 'PersistNoteError'}
+      >({[ImmutableModel.Tag]: 'PersistNoteError'})({})
 
   export type ACLPersistenceError
     = TaggedModel<
