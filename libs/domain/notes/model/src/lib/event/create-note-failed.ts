@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto'
 import { pipe as __, flow as _, apply} from 'fp-ts/function'
 
 import { ImmutableModel } from '@notes/utils/immutable-model'
@@ -26,8 +27,8 @@ export module CreateNoteFailedEvent {
   
   const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
-      , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
-      , command: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
+      , id: Id.__unsafe_of(randomUUID())
+      , command: Id.__unsafe_of(randomUUID())
       , reason: Select.__unsafe_of<Reason>('AuthenticationFailure')
       , event_time: Time.__unsafe_of(new Date())
       , }
@@ -39,19 +40,19 @@ export module CreateNoteFailedEvent {
     = factory<Schema>(
       DEFAULT_VALUE )
 
-  export const UNAUTHENTICATED = __(
+  export const UNAUTHENTICATED_USER_EVENT = __(
     'AuthenticationFailure',
     Select.__unsafe_of<Reason>,
     set<Model, 'reason'>('reason'),
     apply(__unsafe_of({})) )
 
-  export const UNAUTHORIZED = __(
+  export const UNAUTHORIZED_COMMAND_EVENT = __(
     'UnauthorizedAction',
     Select.__unsafe_of<Reason>,
     set<Model, 'reason'>('reason'),
     apply(__unsafe_of({})) )
 
-  export const TARGET_NOT_FOUND = __(
+  export const TARGET_NOT_FOUND_EVENT = __(
     'TargetNotFound',
     Select.__unsafe_of<Reason>,
     set<Model, 'reason'>('reason'),

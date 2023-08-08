@@ -6,7 +6,6 @@ import
 { LazyArg
 , pipe as __
 , flow as _
-, apply as p
 , } from 'fp-ts/function'
 import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import { TaskEither } from 'fp-ts/lib/TaskEither'
@@ -29,16 +28,19 @@ import { FolderEntity } from '../../entity/folder'
 import { Err } from './error'
 import { AccessQuery, AccessState } from './access'
 
-import TARGET_NOT_FOUND_EVENT = CreateNoteFailedEvent.TARGET_NOT_FOUND
-import UNAUTHENTICATED_USER_EVENT = CreateNoteFailedEvent.UNAUTHENTICATED
+import TARGET_NOT_FOUND_EVENT
+  = CreateNoteFailedEvent.TARGET_NOT_FOUND_EVENT
+import UNAUTHENTICATED_USER_EVENT
+  = CreateNoteFailedEvent.UNAUTHENTICATED_USER_EVENT
 import UNAUTHORIZED_COMMAND_EVENT
-  = CreateNoteFailedEvent.UNAUTHORIZED
+  = CreateNoteFailedEvent.UNAUTHORIZED_COMMAND_EVENT
 
 import Command = CreateNoteCommand.Model
 import Folder = FolderEntity.Model
 import NoteCreated = NoteCreatedEvent.Model
 import CreateNoteFailed = CreateNoteFailedEvent.Model
 import AccessControlList = AccessControlListEntity.Model
+
 import set = ImmutableModel.set
 import get = ImmutableModel.get
 import equals = ImmutableModel.equals
@@ -110,6 +112,9 @@ export module _CreateNote {
       { NoteCreatedEvent: ofType<NoteCreated>()
       , CreateNoteFailedEvent: ofType<CreateNoteFailed>()
       , })
+
+  export const workflowEventCase
+    = WorkflowEvent.matchStrict<WorkflowEvent>
 
   /**
    * create a new note if the user creating the note is authorized
@@ -288,18 +293,19 @@ export module _CreateNote {
 
   /**
    * A function that reduces a list of access controls to only those
-   * matching the given user id.
+   * matching that of the user id in the given access query.
    *
    * @returns
    * - a new array where every item has an id matching the given user id
    * - an empty array if no item matches the given user id
    */
-  type reduceToUserACLs
-    =  (i: Id.Value)
+  type filterQueriedUsersACLs
+    =  (q: AccessQuery.Model)
     => (l: Array<AccessControl.Value>)
     => Array<AccessControl.Value>
-  export const reduceToUserACLs: reduceToUserACLs
-    = userId => filter(_(get('user'), id=>id===userId))
+  export const filterQueriedUsersACLs: filterQueriedUsersACLs
+    = query => 
+      filter(_(get('user'), equals(__(query, get('user')))))
 
   /**
    * A function that checks if the given permission exists in the list of
@@ -347,7 +353,7 @@ export module _CreateNote {
       TE.map(O.matchW(
         lazy(AccessState.unauthorized({query: query})),
         _( get('list'),
-           __(query, get('user'), reduceToUserACLs),
+           filterQueriedUsersACLs(query),
            hasPermission(Permission.CREATE),
            matchW(
              lazy(AccessState.unauthorized({query})),
@@ -428,25 +434,22 @@ export module _CreateNote {
   export const checkUserAccess: checkUserAccess
     = a1 => a2 => a3 => command => __(
       safelyCallAuthAdapter(a1),
-      TE.bindTo('maybeUID'),
+      TE.bindTo('maybeUId'),
       TE.bindW('maybeTargetFolder', lazy(__(
-        command,
-        get('targetFolder'),
+        command, get('targetFolder'),
         safelyCallRetrieveFolderAdapter(a3) ))),
 
-      TE.chainW(({maybeUID, maybeTargetFolder})=>__(
-        maybeUID,
-        O.matchW(
+      TE.chainW(({maybeUId, maybeTargetFolder})=>__(
+        maybeUId, O.matchW(
           lazy(TE.right(UNAUTHENTICATED_USER_EVENT)),
           uid => __(
-            maybeTargetFolder,
-            O.matchW(
+            maybeTargetFolder, O.matchW(
               lazy(TE.right(TARGET_NOT_FOUND_EVENT)),
-              _(openFolderAccessQueryForUser(uid),
-                executeAccessQuery(a2),
-                TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
-                  AccessUnauthorized: lazy(UNAUTHORIZED_COMMAND_EVENT),
-                  AccessAuthorized: lazy(command) })))))))))
+              _( openFolderAccessQueryForUser(uid),
+                 executeAccessQuery(a2),
+                 TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
+                   AccessUnauthorized: lazy(UNAUTHORIZED_COMMAND_EVENT),
+                   AccessAuthorized: lazy(command) })))))))))
 
   /**
    * A function that sets the given event time using the time provided
@@ -468,13 +471,30 @@ export module _CreateNote {
       TE.fromEither,
       TE.map(Time.__unsafe_of))),
 
-    TE.map(({event, time}) =>
-      WorkflowEvent.matchStrict<WorkflowEvent>(
-        { CreateNoteFailedEvent:
-            set<CreateNoteFailed, 'event_time'>('event_time')(time)
-        , NoteCreatedEvent:
-            set<NoteCreated, 'event_time'>('event_time')(time)
-        , })(event)) )
+    TE.map(({event, time}) =>__(
+      event,
+      workflowEventCase({
+        CreateNoteFailedEvent:
+            set<CreateNoteFailed, 'event_time'>('event_time')(time),
+        NoteCreatedEvent:
+            set<NoteCreated, 'event_time'>('event_time')(time) }))))
+
+  /**
+   * A function that sets the command that resulted in the given event.
+   *
+   * @returns
+   * - the updated event with the command set to the given command id.
+   */
+  type setEventCommand
+    =  (c: Command)
+    => (e: TaskEither<WorkflowError, WorkflowEvent>)
+    => TaskEither<WorkflowError, WorkflowEvent>
+  export const setEventCommand: setEventCommand
+    = c => TE.map(workflowEventCase({
+      CreateNoteFailedEvent:
+        set<CreateNoteFailed, 'command'>('command')(__(c, get('id'))),
+      NoteCreatedEvent:
+        set<NoteCreated, 'command'>('command')(__(c, get('id'))) }))
 
   /**
    * TODO!!!
@@ -507,5 +527,6 @@ export module _CreateNote {
       return __(
         checkUserAccesForCommand(c),
         persistCreateNote,
-        setEventTimeUsingClock(clock) )}
+        setEventTimeUsingClock(clock),
+        setEventCommand(c) )}
 }

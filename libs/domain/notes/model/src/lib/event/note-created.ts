@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Time, Id } from '@notes/domain/shared/value-object'
 
@@ -11,6 +12,7 @@ export module NoteCreatedEvent {
   export interface Schema
     { [ImmutableModel.Tag]: 'NoteCreatedEvent'
     , id: Id.Value
+    , command: Id.Value
     , note: NoteEntity.Model
     , event_time: Time.Value
     , }
@@ -20,7 +22,8 @@ export module NoteCreatedEvent {
   
   export const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'NoteCreatedEvent'
-      , id: Id.__unsafe_of('f77d466a-2993-11ee-be56-0242ac120002')
+      , id: Id.__unsafe_of(randomUUID())
+      , command: Id.__unsafe_of(randomUUID())
       , note: NoteEntity.__unsafe_of({})
       , event_time: Time.__unsafe_of(new Date())
       , }
