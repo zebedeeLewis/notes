@@ -23,15 +23,15 @@ export module Permission {
       , _value: 'Read'
       , }
   
-  type __unsafe_of
+  type of
     =  (v: unknown)
     => Value
-  const __unsafe_of: __unsafe_of
+  const of: of
     = v => factory<Schema>(DEFAULT)({
       _value: v as PermissionValue })
 
-  export const CREATE: Value = __unsafe_of('Create')
-  export const READ: Value = __unsafe_of('Read')
-  export const UPDATE: Value = __unsafe_of('Update')
-  export const DELETE: Value = __unsafe_of('Delete')
+  export const CREATE: Value = of('Create')
+  export const READ: Value = of('Read')
+  export const UPDATE: Value = of('Update')
+  export const DELETE: Value = of('Delete')
 }

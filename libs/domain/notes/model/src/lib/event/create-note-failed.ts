@@ -1,60 +1,69 @@
 import {randomUUID} from 'crypto'
-import { pipe as __, flow as _, apply} from 'fp-ts/function'
+import { pipe as __, flow as _ } from 'fp-ts/function'
 
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { Time, Id, Select } from '@notes/domain/shared/value-object'
+import { Time, Id } from '@notes/domain/shared/value-object'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
-import set = ImmutableModel.set
 
 export module CreateNoteFailedEvent {
-  export type Reason
-    = 'AuthenticationFailure'
-    | 'UnauthorizedAction'
-    | 'TargetNotFound'
-
-  interface Schema
-    { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
-    , id: Id.Value
+  interface BaseSchema
+    { id: Id.Value
     , command: Id.Value
-    , reason: Select.Options<Reason>
-    , event_time: Time.Value
+    , time: Time.Value
     , }
-  
-  export type Model
-    = TaggedModel<Schema>
-  
-  const DEFAULT_VALUE: Schema
-    = { [ImmutableModel.Tag]: 'CreateNoteFailedEvent'
-      , id: Id.__unsafe_of(randomUUID())
-      , command: Id.__unsafe_of(randomUUID())
-      , reason: Select.__unsafe_of<Reason>('AuthenticationFailure')
-      , event_time: Time.__unsafe_of(new Date())
-      , }
-  
-  type __unsafe_of
-    = (m: Partial<Schema>)
+
+  export interface UnauthenticatedUserSchema extends BaseSchema
+    { [ImmutableModel.Tag]: 'UnauthenticatedUserEvent' }
+
+  export type UnauthenticatedUser = TaggedModel<UnauthenticatedUserSchema>
+
+  type unauthenticatedUser
+    = (m: Partial<UnauthenticatedUser>)
     => Model
-  export const __unsafe_of: __unsafe_of
-    = factory<Schema>(
-      DEFAULT_VALUE )
+  export const unauthenticatedUser: unauthenticatedUser
+    = factory<UnauthenticatedUserSchema>(
+      { [ImmutableModel.Tag]: 'UnauthenticatedUserEvent'
+      , id: Id.of(randomUUID())
+      , command: Id.of(randomUUID())
+      , time: Time.of(new Date())
+      , })
 
-  export const UNAUTHENTICATED_USER_EVENT = __(
-    'AuthenticationFailure',
-    Select.__unsafe_of<Reason>,
-    set<Model, 'reason'>('reason'),
-    apply(__unsafe_of({})) )
+  export interface UnauthorizedCommandSchema extends BaseSchema
+    { [ImmutableModel.Tag]: 'UnauthorizedCommandEvent' }
 
-  export const UNAUTHORIZED_COMMAND_EVENT = __(
-    'UnauthorizedAction',
-    Select.__unsafe_of<Reason>,
-    set<Model, 'reason'>('reason'),
-    apply(__unsafe_of({})) )
+  export type UnauthorizedCommand = TaggedModel<UnauthorizedCommandSchema>
 
-  export const TARGET_NOT_FOUND_EVENT = __(
-    'TargetNotFound',
-    Select.__unsafe_of<Reason>,
-    set<Model, 'reason'>('reason'),
-    apply(__unsafe_of({})) )
+  type unauthorizedCommand
+    = (m: Partial<UnauthorizedCommand>)
+    => Model
+  export const unauthorizedCommand: unauthorizedCommand
+    = factory<UnauthorizedCommandSchema>(
+      { [ImmutableModel.Tag]: 'UnauthorizedCommandEvent'
+      , id: Id.of(randomUUID())
+      , command: Id.of(randomUUID())
+      , time: Time.of(new Date())
+      , })
+
+  export interface TargetNoteFoundSchema extends BaseSchema
+    { [ImmutableModel.Tag]: 'TargetNotFoundEvent' }
+
+  export type TargetNoteFound = TaggedModel<TargetNoteFoundSchema>
+
+  type targetNotFound
+    = (m: Partial<TargetNoteFound>)
+    => Model
+  export const targetNotFound: targetNotFound
+    = factory<TargetNoteFoundSchema>(
+      { [ImmutableModel.Tag]: 'TargetNotFoundEvent'
+      , id: Id.of(randomUUID())
+      , command: Id.of(randomUUID())
+      , time: Time.of(new Date())
+      , })
+
+  export type Model
+    = UnauthenticatedUser
+    | UnauthorizedCommand
+    | TargetNoteFound
 }

@@ -24,17 +24,17 @@ export module CreateNoteCommand {
 
   export const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'CreateNoteCommand'
-      , id: __(idStr, Id.__unsafe_of)
-      , name: __(idStr, Str.__unsafe_of)
-      , content: Str.__unsafe_of('default content')
-      , isImportant: Bool.__unsafe_of(false)
-      , targetFolder: __(randomUUID(), Id.__unsafe_of)
-      , creator: __(randomUUID(), Id.__unsafe_of)
+      , id: __(idStr, Id.of)
+      , name: __(idStr, Str.of)
+      , content: Str.of('default content')
+      , isImportant: Bool.of(false)
+      , targetFolder: __(randomUUID(), Id.of)
+      , creator: __(randomUUID(), Id.of)
       , }
   
-  type __unsafe_of
+  type of
     = (m: Partial<Schema>)
     => Model
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = factory<Schema>(DEFAULT_VALUE)
 }

@@ -16,10 +16,10 @@ export module Select {
       , _value: 'select option'
       , }
   
-  type __unsafe_of
+  type of
     =  <V>(v: unknown)
     => Options<V>
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = <V>(
       v: unknown
     ): Options<V> => factory<OptionsI<V>>(DEFAULT)({

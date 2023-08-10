@@ -15,10 +15,10 @@ export module Time {
       , _value: new Date()
       , }
   
-  type __unsafe_of
+  type of
     =  (v: unknown)
     => Value
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = v => factory<Schema>(DEFAULT)({
       _value: v as Date })
 }

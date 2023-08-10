@@ -21,13 +21,13 @@ export module AccessControl {
   
   export const DEFAULT: Schema
     = { [ImmutableModel.Tag]: 'AccessControlValue'
-      , user: Id.__unsafe_of(randomUUID())
+      , user: Id.of(randomUUID())
       , permission: Permission.READ
       , }
   
-  type __unsafe_of
+  type of
     = (v: Partial<Schema>)
     => Value
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = factory<Schema>(DEFAULT)
 }

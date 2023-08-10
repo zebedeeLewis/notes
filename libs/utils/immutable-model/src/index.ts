@@ -8,5 +8,6 @@ export module ImmutableModel {
   export import get = _mod.get
   export import transferProp = _mod.transferProp
   export import set = _mod.set
+  export import update = _mod.update
   export import equals = _mod.equals
 }

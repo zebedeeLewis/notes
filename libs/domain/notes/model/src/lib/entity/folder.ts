@@ -24,22 +24,22 @@ export module FolderEntity {
     = TaggedModel<Schema>
   
   const idStr = randomUUID()
-  const defaultCreator =  __(randomUUID(), Id.__unsafe_of)
+  const defaultCreator =  __(randomUUID(), Id.of)
 
   export const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'FolderEntity'
-      , id: __(randomUUID(), Id.__unsafe_of)
-      , name: __(idStr, Str.__unsafe_of)
-      , creation_time: Time.__unsafe_of(new Date())
+      , id: __(randomUUID(), Id.of)
+      , name: __(idStr, Str.of)
+      , creation_time: Time.of(new Date())
       , parent: none
       , owner: defaultCreator
       , creator: defaultCreator
-      , access_control_list: AccessControlListEntity.__unsafe_of({})
+      , access_control_list: AccessControlListEntity.of({})
       , }
   
-  type __unsafe_of
+  type of
     = (m: Partial<Schema>)
     => Model
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = factory<Schema>(DEFAULT_VALUE)
 }

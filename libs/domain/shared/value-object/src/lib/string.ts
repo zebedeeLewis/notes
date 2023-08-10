@@ -16,10 +16,10 @@ export module Str {
       , _value: ''
       , }
   
-  type __unsafe_of
+  type of
     =  (v: unknown)
     => Value
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = v => factory<Schema>(DEFAULT)({
       _value: v as string })
 }

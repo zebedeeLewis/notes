@@ -26,9 +26,9 @@ export module AccessQuery {
 
   const DEFAULT: Schema
     = { _tag: 'AccessQuery'
-      , user: Id.__unsafe_of(randomUUID())
+      , user: Id.of(randomUUID())
       , permission: Permission.READ
-      , resource: FolderEntity.__unsafe_of({})
+      , resource: FolderEntity.of({})
       , }
 
   export type Model

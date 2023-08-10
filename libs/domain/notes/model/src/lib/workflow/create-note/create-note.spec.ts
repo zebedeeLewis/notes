@@ -2,7 +2,7 @@ import {randomUUID} from 'crypto'
 import * as E from 'fp-ts/lib/Either'
 import * as TE from 'fp-ts/lib/TaskEither'
 import * as O from 'fp-ts/lib/Option'
-import { pipe as __, flow as _ } from 'fp-ts/function'
+import { pipe as $, flow as _ } from 'fp-ts/function'
 
 import { clockError } from '@notes/utils/clock'
 import { it_, when, given, and, todo } from '@notes/utils/test'
@@ -21,12 +21,10 @@ import { _CreateNote } from './create-note'
 import { AccessQuery, AccessState } from './access'
 import { Err } from './error'
 
-import TARGET_NOT_FOUND_EVENT
-  = CreateNoteFailedEvent.TARGET_NOT_FOUND_EVENT
-import UNAUTHENTICATED_USER_EVENT
-  = CreateNoteFailedEvent.UNAUTHENTICATED_USER_EVENT
-import UNAUTHORIZED_COMMAND_EVENT
-  = CreateNoteFailedEvent.UNAUTHORIZED_COMMAND_EVENT
+import unauthenticatedUser
+  = CreateNoteFailedEvent.unauthenticatedUser
+import unauthorizedCommand
+  = CreateNoteFailedEvent.unauthorizedCommand
 
 import configure = _CreateNote.configure
 import setEventCommand = _CreateNote.setEventCommand
@@ -41,7 +39,7 @@ import checkUserAccess = _CreateNote.checkUserAccess
 import setEventTimeUsingClock = _CreateNote.setEventTimeUsingClock
 import Dependencies = _CreateNote.Dependencies
 import authenticationError = Err.authenticationError
-import get = ImmutableModel.get
+import attr = ImmutableModel.get
 import set = ImmutableModel.set
 
 const TEST_TIME = new Date('1914-05-11T06:00:00.000Z')
@@ -54,41 +52,41 @@ describe('CreateNoteWorkflow', ()=>{
   // Mock Persist Note Adapters
   const errPersistNote = async ()=>{throw new Error()}
   const persistRandomNote
-    = async () => NoteCreatedEvent.__unsafe_of(
-      {id: Id.__unsafe_of(randomUUID())})
+    = async () => NoteCreatedEvent.of(
+      {id: Id.of(randomUUID())})
 
   // Mock ACL Adapters
   const errGetACL = async () => {throw new Error()}
-  const getSomeRandomACL = async () => __(
-    AccessControlListEntity.__unsafe_of({}), O.some)
+  const getSomeRandomACL = async () =>
+    $(AccessControlListEntity.of({}), O.some)
   const getNoneACL = async () => O.none
 
   // Mock Authentication Adapters
   const errGetUId = async () => {throw new Error()}
-  const getSomeRandomUId = async () =>  __(
-    randomUUID(), Id.__unsafe_of, O.some)
+  const getSomeRandomUId = async () => 
+    $(randomUUID(), Id.of, O.some)
   const getNoneUId = async () =>  O.none
 
   // Mock Retrieve Folder Adapters
   const errGetFolder = async () => {throw new Error()}
-  const getSomeRandomFolder = async () => __(
-    FolderEntity.__unsafe_of({}), O.some)
+  const getSomeRandomFolder = async () =>
+    $(FolderEntity.of({}), O.some)
   const getNoneFolder = async () => O.none
 
-  const createNote = CreateNoteCommand.__unsafe_of({})
+  const createNote = CreateNoteCommand.of({})
 
   describe('setEventCommand()', ()=>{
     given('a create note failed event',()=>{
       it_('returns an updated copy of the given event on which the command '
          +'is set to the given command',async()=>{
-        const event = CreateNoteFailedEvent.__unsafe_of({})
-        const command = CreateNoteCommand.__unsafe_of({})
-        const commandId = __(command, get('id'))
+        const event = CreateNoteFailedEvent.targetNotFound({})
+        const command = CreateNoteCommand.of({})
+        const commandId = $(command, attr('id'))
 
-        const task = __(event, TE.right, setEventCommand(command))
+        const task = $(event, TE.right, setEventCommand(command))
 
         const actual = await task()
-        const expected = __(event, set('command')(commandId), E.right)
+        const expected = $(event, set('command')(commandId), E.right)
 
         expect(actual).toEqual(expected)
       })
@@ -97,14 +95,14 @@ describe('CreateNoteWorkflow', ()=>{
     given('a note created event',()=>{
       it_('returns an updated copy of the given event on which the command '
          +'is set to the given command',async()=>{
-        const event = NoteCreatedEvent.__unsafe_of({})
-        const command = CreateNoteCommand.__unsafe_of({})
-        const commandId = __(command, get('id'))
+        const event = NoteCreatedEvent.of({})
+        const command = CreateNoteCommand.of({})
+        const commandId = $(command, attr('id'))
 
-        const task = __(event, TE.right, setEventCommand(command))
+        const task = $(event, TE.right, setEventCommand(command))
 
         const actual = await task()
-        const expected = __(event, set('command')(commandId), E.right)
+        const expected = $(event, set('command')(commandId), E.right)
 
         expect(actual).toEqual(expected)
       })
@@ -117,25 +115,25 @@ describe('CreateNoteWorkflow', ()=>{
       const result = setEventTimeUsingClock(errClock)
 
       const actual = JSON.stringify(result)
-      const expected = __(clockError(), TE.left, JSON.stringify)
+      const expected = $(clockError(), TE.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })
     given('a "note created event" ', ()=>{
       it_('sets event time to the time produced by the clock '
          +'function', async ()=>{
-        const noteCreated = NoteCreatedEvent.__unsafe_of({})
+        const noteCreated = NoteCreatedEvent.of({})
 
-        const task = __(
+        const task = $(
           TE.right(noteCreated),
           setEventTimeUsingClock(getTestTime),
-          TE.map(_(get('event_time'))),
+          TE.map(_(attr('time'))),
           TE.toUnion )
 
         const result = await task()
 
         const actual = JSON.stringify(result)
-        const expected = JSON.stringify(Time.__unsafe_of(TEST_TIME))
+        const expected = JSON.stringify(Time.of(TEST_TIME))
 
         expect(actual).toEqual(expected)
       })
@@ -143,18 +141,18 @@ describe('CreateNoteWorkflow', ()=>{
     given('a "create note failed event" ', ()=>{
       it_('sets event time to the time produced by the clock '
          +'function', async ()=>{
-        const noteCreated = CreateNoteFailedEvent.__unsafe_of({})
+        const noteCreated = CreateNoteFailedEvent.targetNotFound({})
 
-        const task = __(
+        const task = $(
           TE.right(noteCreated),
           setEventTimeUsingClock(getTestTime),
-          TE.map(_(get('event_time'))),
+          TE.map(_(attr('time'))),
           TE.toUnion )
 
         const result = await task()
 
         const actual = JSON.stringify(result)
-        const expected = JSON.stringify(Time.__unsafe_of(TEST_TIME))
+        const expected = JSON.stringify(Time.of(TEST_TIME))
 
         expect(actual).toEqual(expected)
       })
@@ -164,8 +162,8 @@ describe('CreateNoteWorkflow', ()=>{
   describe('openFolderAccessQueryForUser()',()=>{
     it_('returns a new access query where the user id is set to the given '
       +'id, and the resource is set to the given folder',()=>{
-      const user = Id.__unsafe_of(randomUUID())
-      const resource = FolderEntity.__unsafe_of({})
+      const user = Id.of(randomUUID())
+      const resource = FolderEntity.of({})
 
       const actual = openFolderAccessQueryForUser(user)(resource)
       const expected = AccessQuery.of({user, resource})
@@ -178,21 +176,21 @@ describe('CreateNoteWorkflow', ()=>{
     it_('returns false if no access control exists in the list with the '
        +'given permission',()=>{
       const ACLs =
-        [ AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        [ AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.CREATE
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.READ
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.UPDATE
           , })
         , ]
 
-      const actual = __(ACLs, hasPermission(Permission.DELETE))
+      const actual = $(ACLs, hasPermission(Permission.DELETE))
       const expected = false
 
       expect(actual).toEqual(expected)
@@ -200,16 +198,16 @@ describe('CreateNoteWorkflow', ()=>{
     it_('returns true if one access control exists in the list '
        +'with the given permission',()=>{
       const ACLs =
-        [ AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        [ AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.CREATE
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.READ
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.UPDATE
           , })
         , ]
@@ -224,60 +222,60 @@ describe('CreateNoteWorkflow', ()=>{
   describe('filterQueriedUsersACLs()',()=>{
     it_('returns a new array consisting of only the items that have an '
        +'id matching the user id in the access query',()=>{
-      const user = Id.__unsafe_of(randomUUID())
+      const user = Id.of(randomUUID())
       const query = AccessQuery.of({user})
 
       const johnsACLs =
-        [ AccessControl.__unsafe_of(
+        [ AccessControl.of(
           { user, permission: Permission.CREATE })
-        , AccessControl.__unsafe_of(
+        , AccessControl.of(
           { user, permission: Permission.DELETE })
-        , AccessControl.__unsafe_of(
+        , AccessControl.of(
           { user, permission: Permission.UPDATE })
         , ]
 
       const ACLs =
         [ ... johnsACLs
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.CREATE
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.READ
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.UPDATE
           , })
         , ]
 
-      const actual = __(ACLs, filterQueriedUsersACLs(query))
+      const actual = $(ACLs, filterQueriedUsersACLs(query))
       const expected = johnsACLs
 
       expect(actual).toEqual(expected)
     })
     it_('returns an empty array if no items have an id matching the '
        +'the user id in the access query',()=>{
-      const user = Id.__unsafe_of(randomUUID())
+      const user = Id.of(randomUUID())
       const query = AccessQuery.of({user})
 
       const ACLs =
-        [ AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        [ AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.CREATE
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.READ
           , })
-        , AccessControl.__unsafe_of(
-          { user: Id.__unsafe_of(randomUUID())
+        , AccessControl.of(
+          { user: Id.of(randomUUID())
           , permission: Permission.UPDATE
           , })
         , ]
 
-      const actual = __(ACLs, filterQueriedUsersACLs(query))
+      const actual = $(ACLs, filterQueriedUsersACLs(query))
       const expected = []
 
       expect(actual).toEqual(expected)
@@ -294,7 +292,7 @@ describe('CreateNoteWorkflow', ()=>{
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         Err.aclPersistenceError(),
         E.left,
         JSON.stringify)
@@ -306,11 +304,11 @@ describe('CreateNoteWorkflow', ()=>{
       when('the ACL adapter returns an ACL',()=>{
         it_('returns an authorized query state if the user has a create '
            +'permission in the ACL',async()=>{
-          const user = Id.__unsafe_of(randomUUID())
-          const getSomeACL = async () => __(
-            AccessControlListEntity.__unsafe_of(
+          const user = Id.of(randomUUID())
+          const getSomeACL = async () => $(
+            AccessControlListEntity.of(
               { list:
-                [ AccessControl.__unsafe_of(
+                [ AccessControl.of(
                   { user
                   , permission: Permission.CREATE
                   , })
@@ -324,7 +322,7 @@ describe('CreateNoteWorkflow', ()=>{
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
+          const expected = $(
             AccessState.authorized({query}),
             E.right,
             JSON.stringify)
@@ -334,11 +332,11 @@ describe('CreateNoteWorkflow', ()=>{
 
         it_('returns an unauthorized query state if the user does not have '
            +'a create permission in the ACL',async()=>{
-          const user = Id.__unsafe_of(randomUUID())
-          const getSomeACL = async () => __(
-            AccessControlListEntity.__unsafe_of(
+          const user = Id.of(randomUUID())
+          const getSomeACL = async () => $(
+            AccessControlListEntity.of(
               { list:
-                [ AccessControl.__unsafe_of(
+                [ AccessControl.of(
                   { user
                   , permission: Permission.READ
                   , })
@@ -346,14 +344,14 @@ describe('CreateNoteWorkflow', ()=>{
               , }),
             O.some )
 
-          const resource = FolderEntity.__unsafe_of({})
+          const resource = FolderEntity.of({})
           const query = AccessQuery.of({resource, user})
 
           const task = checkUserAccessViaACL(getSomeACL)(query)
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
+          const expected = $(
             AccessState.unauthorized({query}),
             E.right,
             JSON.stringify)
@@ -370,7 +368,7 @@ describe('CreateNoteWorkflow', ()=>{
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
+          const expected = $(
             AccessState.unauthorized({query}),
             E.right,
             JSON.stringify)
@@ -384,15 +382,15 @@ describe('CreateNoteWorkflow', ()=>{
   describe('checkUserAccessViaFolderOwner()',()=>{
     it_('returns an authorized query state if the user is '
        +'the owner of the resource under query',()=>{
-      const owner = Id.__unsafe_of(randomUUID())
+      const owner = Id.of(randomUUID())
       const user = owner
-      const resource = FolderEntity.__unsafe_of({owner})
+      const resource = FolderEntity.of({owner})
       const query = AccessQuery.of({resource, user})
 
       const result = checkUserAccessViaFolderOwner(query)
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         AccessState.authorized({query}),
         JSON.stringify)
 
@@ -400,16 +398,16 @@ describe('CreateNoteWorkflow', ()=>{
     })
     it_('returns an unauthorized query state if the user is not '
        +'the owner of the resource under query',()=>{
-      const owner = Id.__unsafe_of(randomUUID())
-      const user = Id.__unsafe_of(randomUUID())
+      const owner = Id.of(randomUUID())
+      const user = Id.of(randomUUID())
 
-      const resource = FolderEntity.__unsafe_of({owner})
+      const resource = FolderEntity.of({owner})
       const query = AccessQuery.of({resource, user})
 
       const result = checkUserAccessViaFolderOwner(query)
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         AccessState.unauthorized({query}),
         JSON.stringify)
 
@@ -427,7 +425,7 @@ describe('CreateNoteWorkflow', ()=>{
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         Err.aclPersistenceError(),
         E.left,
         JSON.stringify)
@@ -437,8 +435,8 @@ describe('CreateNoteWorkflow', ()=>{
     given('that the ACL adapter does not throw',()=>{
       when('the user is the owner of the resource',()=>{
         it_('returns an authorized query state',async()=>{
-          const owner = Id.__unsafe_of(randomUUID())
-          const resource = FolderEntity.__unsafe_of(
+          const owner = Id.of(randomUUID())
+          const resource = FolderEntity.of(
             { owner })
 
           const user = owner
@@ -448,7 +446,7 @@ describe('CreateNoteWorkflow', ()=>{
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
+          const expected = $(
             AccessState.authorized({query}),
             E.right,
             JSON.stringify)
@@ -459,24 +457,24 @@ describe('CreateNoteWorkflow', ()=>{
       when('the user is not the owner of the resource',()=>{
         it_('returns an authorized query state if the user has '
            +'a create permission in the returned ACL',async()=>{
-          const user = Id.__unsafe_of(randomUUID())
-          const acl = AccessControlListEntity.__unsafe_of(
+          const user = Id.of(randomUUID())
+          const acl = AccessControlListEntity.of(
             { list:
-              [ AccessControl.__unsafe_of(
+              [ AccessControl.of(
                 { user
                 , permission: Permission.CREATE
                 , })
               , ]
             , })
 
-          const getSomeACL = async () => __(acl, O.some)
+          const getSomeACL = async () => $(acl, O.some)
           const query = AccessQuery.of({user})
 
           const task = executeAccessQuery(getSomeACL)(query)
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
+          const expected = $(
             AccessState.authorized({query}),
             E.right,
             JSON.stringify)
@@ -486,18 +484,18 @@ describe('CreateNoteWorkflow', ()=>{
 
         it_('returns an unauthorized query state if the user does not '
            +'have a create permission in the returned ACL',async()=>{
-          const user = Id.__unsafe_of(randomUUID())
-          const acl = AccessControlListEntity.__unsafe_of(
+          const user = Id.of(randomUUID())
+          const acl = AccessControlListEntity.of(
             { list: []})
 
-          const getSomeACL = async () => __(acl, O.some)
+          const getSomeACL = async () => $(acl, O.some)
           const query = AccessQuery.of({user})
 
           const task = executeAccessQuery(getSomeACL)(query)
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
+          const expected = $(
             AccessState.unauthorized({query}),
             E.right,
             JSON.stringify)
@@ -513,15 +511,15 @@ describe('CreateNoteWorkflow', ()=>{
        +'throws an error',async()=>{
       const task
         = checkUserAccess
+          (getSomeRandomFolder)
           (errGetUId)
           (getSomeRandomACL)
-          (getSomeRandomFolder)
           (createNote)
 
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         Err.authenticationError(),
         E.left,
         JSON.stringify)
@@ -533,15 +531,15 @@ describe('CreateNoteWorkflow', ()=>{
        +'control list persistence adapter throws',async()=>{
       const task
         = checkUserAccess
+          (getSomeRandomFolder)
           (getSomeRandomUId)
           (errGetACL)
-          (getSomeRandomFolder)
           (createNote)
 
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         Err.aclPersistenceError(),
         E.left,
         JSON.stringify)
@@ -553,15 +551,15 @@ describe('CreateNoteWorkflow', ()=>{
        +'adapter throws',async()=>{
       const task
         = checkUserAccess
+          (errGetFolder)
           (getSomeRandomUId)
           (getSomeRandomACL)
-          (errGetFolder)
           (createNote)
 
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(
+      const expected = $(
         Err.retrieveFolderError(),
         E.left,
         JSON.stringify)
@@ -576,16 +574,16 @@ describe('CreateNoteWorkflow', ()=>{
         it_('returns a fail event due to unauthenticated user',async()=>{
           const task
             = checkUserAccess
+              (getSomeRandomFolder)
               (getNoneUId)
               (getSomeRandomACL)
-              (getSomeRandomFolder)
               (createNote)
 
           const result = await task()
 
           const actual = JSON.stringify(result)
-          const expected = __(
-            UNAUTHENTICATED_USER_EVENT,
+          const expected = $(
+            unauthenticatedUser({}),
             E.right,
             JSON.stringify)
 
@@ -593,33 +591,33 @@ describe('CreateNoteWorkflow', ()=>{
         })
       })
       and('the authentication adapter returns a user id',()=>{
-        const user = Id.__unsafe_of(randomUUID())
-        const getSomeUId = async () =>  __(user, O.some)
+        const user = Id.of(randomUUID())
+        const getSomeUId = async () =>  $(user, O.some)
 
         when('the authenticated user is the same as the target folder '
            +'owner'
            ,()=>{
           const owner = user
-          const getSomeFolder = async () => __(
-            FolderEntity.__unsafe_of({owner}), O.some)
+          const getSomeFolder = async () => $(
+            FolderEntity.of({owner}), O.some)
 
-          const targetFolder = Id.__unsafe_of(randomUUID())
-          const createNoteInUserFolder = CreateNoteCommand.__unsafe_of(
+          const targetFolder = Id.of(randomUUID())
+          const createNoteInUserFolder = CreateNoteCommand.of(
             {targetFolder})
 
           it_('returns the original command indicating that the user '
              +'is authorized to execute the command',async()=>{
             const task
               = checkUserAccess
+                (getSomeFolder)
                 (getSomeUId)
                 (getSomeRandomACL)
-                (getSomeFolder)
                 (createNoteInUserFolder)
 
             const result = await task()
 
             const actual = JSON.stringify(result)
-            const expected = __(
+            const expected = $(
               createNoteInUserFolder,
               E.right,
               JSON.stringify)
@@ -632,10 +630,10 @@ describe('CreateNoteWorkflow', ()=>{
           it_('returns a fail event due to unauthorized action if '
              +'the user does not have a create permission in the target '
              +'folders access control list.', async()=>{
-            const getSomeACL = async () => __(
-              AccessControlListEntity.__unsafe_of(
+            const getSomeACL = async () => $(
+              AccessControlListEntity.of(
                 { list:
-                  [ AccessControl.__unsafe_of(
+                  [ AccessControl.of(
                     { user
                     , permission: Permission.READ
                     , })
@@ -643,20 +641,20 @@ describe('CreateNoteWorkflow', ()=>{
                 , }),
               O.some )
 
-            const createNoteInUserFolder = CreateNoteCommand.__unsafe_of({})
+            const createNoteInUserFolder = CreateNoteCommand.of({})
 
             const task
               = checkUserAccess
+                (getSomeRandomFolder)
                 (getSomeUId)
                 (getSomeACL)
-                (getSomeRandomFolder)
                 (createNoteInUserFolder)
 
             const result = await task()
 
             const actual = JSON.stringify(result)
-            const expected = __(
-              UNAUTHORIZED_COMMAND_EVENT,
+            const expected = $(
+              unauthorizedCommand({}),
               E.right,
               JSON.stringify)
 
@@ -666,10 +664,10 @@ describe('CreateNoteWorkflow', ()=>{
           it_('returns the original command if the user has a create '
              +'permission in the target folders access control list.'
              ,async()=>{
-            const getSomeACL = async () => __(
-              AccessControlListEntity.__unsafe_of(
+            const getSomeACL = async () => $(
+              AccessControlListEntity.of(
                 { list:
-                  [ AccessControl.__unsafe_of(
+                  [ AccessControl.of(
                     { user
                     , permission: Permission.CREATE
                     , })
@@ -678,19 +676,19 @@ describe('CreateNoteWorkflow', ()=>{
               O.some )
 
             const createNoteInUserFolder
-              = CreateNoteCommand.__unsafe_of({})
+              = CreateNoteCommand.of({})
 
             const task
               = checkUserAccess
+                (getSomeRandomFolder)
                 (getSomeUId)
                 (getSomeACL)
-                (getSomeRandomFolder)
                 (createNoteInUserFolder)
 
             const result = await task()
 
             const actual = JSON.stringify(result)
-            const expected = __(
+            const expected = $(
               createNoteInUserFolder,
               E.right,
               JSON.stringify)
@@ -719,14 +717,14 @@ describe('CreateNoteWorkflow', ()=>{
           , clock
           }
 
-      const createNote = CreateNoteCommand.__unsafe_of({})
+      const createNote = CreateNoteCommand.of({})
 
       const workflow = configure(dependencies)
-      const task = __(createNote, workflow)
+      const task = $(createNote, workflow)
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(authenticationError(), E.left, JSON.stringify)
+      const expected = $(authenticationError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })
@@ -747,14 +745,14 @@ describe('CreateNoteWorkflow', ()=>{
           , clock
           }
 
-      const createNote = CreateNoteCommand.__unsafe_of({})
+      const createNote = CreateNoteCommand.of({})
 
       const workflow = configure(dependencies)
-      const task = __(createNote, workflow)
+      const task = $(createNote, workflow)
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(clockError(), E.left, JSON.stringify)
+      const expected = $(clockError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })
@@ -775,14 +773,14 @@ describe('CreateNoteWorkflow', ()=>{
           , clock
           }
 
-      const createNote = CreateNoteCommand.__unsafe_of({})
+      const createNote = CreateNoteCommand.of({})
 
       const workflow = configure(dependencies)
-      const task = __(createNote, workflow)
+      const task = $(createNote, workflow)
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(Err.persistNoteError(), E.left, JSON.stringify)
+      const expected = $(Err.persistNoteError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })
@@ -803,19 +801,33 @@ describe('CreateNoteWorkflow', ()=>{
           , clock
           }
 
-      const createNote = CreateNoteCommand.__unsafe_of({})
+      const createNote = CreateNoteCommand.of({})
 
       const workflow = configure(dependencies)
-      const task = __(createNote, workflow)
+      const task = $(createNote, workflow)
       const result = await task()
 
       const actual = JSON.stringify(result)
-      const expected = __(Err.aclPersistenceError(), E.left, JSON.stringify)
+      const expected = $(Err.aclPersistenceError(), E.left, JSON.stringify)
 
       expect(actual).toEqual(expected)
     })
 
     given('that no error occurs', ()=>{
+      and('the workflow executed successfully', ()=>{
+        todo('it returns a note created event')
+
+        todo('it sets the events command attribute to the command id')
+
+        todo('it sets the event time to the time returned by the clock')
+      })
+      and('the workflow failed', ()=>{
+        todo('it returns a create note failed event')
+
+        todo('it sets the events command attribute to the command id')
+
+        todo('it sets the event time to the time returned by the clock')
+      })
     })
   })
 })

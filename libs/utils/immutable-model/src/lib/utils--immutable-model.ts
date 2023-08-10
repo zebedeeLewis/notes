@@ -1,4 +1,5 @@
-import { flow as _, pipe as __, apply } from 'fp-ts/lib/function'
+import { reduce } from 'fp-ts/lib/Array'
+import { flow as _, pipe as __, apply, unsafeCoerce } from 'fp-ts/lib/function'
 import { RecordOf, Record } from 'immutable'
 
 export const Tag = '_tag' as const
@@ -75,3 +76,14 @@ type equals
   => boolean
 export const equals: equals
   = ma => mb => ma === mb
+
+type update
+  =  <M extends TaggedModel<any>>
+     (u: Partial<TaggedModelSchema<M>>)
+  => (m: M)
+  => M
+export const update: update
+  = u => m => __(
+  Object.keys(u),
+  unsafeCoerce<string[], Array<keyof (typeof u)>>,
+  reduce(m, (m, k)=>m.set(k, u[k])) )

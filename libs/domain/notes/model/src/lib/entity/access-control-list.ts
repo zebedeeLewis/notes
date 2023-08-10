@@ -17,13 +17,13 @@ export module AccessControlListEntity {
   
   export const DEFAULT_VALUE: Schema
     = { [ImmutableModel.Tag]: 'AccessControlListEntity'
-      , id: Id.__unsafe_of(randomUUID())
+      , id: Id.of(randomUUID())
       , list: []
       , }
   
-  type __unsafe_of
+  type of
     = (m: Partial<Schema>)
     => Model
-  export const __unsafe_of: __unsafe_of
+  export const of: of
     = factory<Schema>(DEFAULT_VALUE)
 }
