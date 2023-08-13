@@ -1,6 +1,11 @@
 import { reduce } from 'fp-ts/lib/Array'
-import { flow as _, pipe as __, apply, unsafeCoerce } from 'fp-ts/lib/function'
-import { RecordOf, Record } from 'immutable'
+import
+{ flow as _
+, pipe as __
+, apply
+, unsafeCoerce
+, } from 'fp-ts/lib/function'
+import { RecordOf, Record, is } from 'immutable'
 
 export const Tag = '_tag' as const
 export type Tag = typeof Tag
@@ -75,7 +80,7 @@ type equals
   => (mb: M)
   => boolean
 export const equals: equals
-  = ma => mb => ma === mb
+  = ma => mb => is(ma, mb)
 
 type update
   =  <M extends TaggedModel<any>>

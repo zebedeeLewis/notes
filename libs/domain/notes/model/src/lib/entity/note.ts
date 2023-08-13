@@ -14,11 +14,11 @@ export module NoteEntity {
     , name: Str.Value
     , content: Str.Value
     , isImportant: Bool.Value
-    , creation_time: Time.Value
+    , creationTime: Time.Value
     , parent: Id.Value
     , owner: Id.Value
     , creator: Id.Value
-    , access_control_list: AccessControlListEntity.Model
+    , accessControlList: AccessControlListEntity.Model
     , }
   
   export type Model
@@ -33,11 +33,11 @@ export module NoteEntity {
       , name: __(idStr, Str.of)
       , content: Str.of('default content')
       , isImportant: Bool.of(false)
-      , creation_time: Time.of(new Date())
+      , creationTime: Time.of(new Date())
       , parent: __(randomUUID(), Id.of)
       , owner: defaultCreator
       , creator: defaultCreator
-      , access_control_list: AccessControlListEntity.of({})
+      , accessControlList: AccessControlListEntity.of({})
       , }
   
   type of

@@ -1,5 +1,5 @@
 import { Record } from 'immutable'
-import { pipe as __ } from 'fp-ts/lib/function'
+import { pipe as $ } from 'fp-ts/lib/function'
 import { it_ } from '@notes/utils/test'
 import
   { TaggedModel
@@ -7,6 +7,7 @@ import
   , get
   , set
   , transferProp
+  , equals
   , } from './utils--immutable-model'
 
 interface TestSchema
@@ -50,7 +51,7 @@ describe('DomainShared.ImmutableModel', ()=>{
       const input = {value: 44}
       const model = createTestModel(input)
 
-      const actual = __( model, get('value') )
+      const actual = $( model, get('value') )
       const expected = input.value
 
       expect(actual).toEqual(expected)
@@ -71,7 +72,7 @@ describe('DomainShared.ImmutableModel', ()=>{
       const finalValue = 568
 
       const actual
-        = __(
+        = $(
         model,
         set<TestModel, 'value'>('value')(finalValue),
         get('value'))
@@ -85,7 +86,7 @@ describe('DomainShared.ImmutableModel', ()=>{
       const finalValue = 568
 
       const result
-        = __(
+        = $(
         model,
         set<TestModel, 'value'>('value')(finalValue) )
 
@@ -105,8 +106,29 @@ describe('DomainShared.ImmutableModel', ()=>{
 
       const model = createTestModel({[keyA]: valA, [keyB]: valB})
 
-      const actual = __(model, transferProp(keyA)(keyB), get(keyB))
+      const actual = $(model, transferProp(keyA)(keyB), get(keyB))
       const expected = valA
+
+      expect(actual).toEqual(expected)
+    })
+  })
+  describe('equals()',()=>{
+    it_('returns true if the two models are equal',()=>{
+      const mA = createTestModel({}) 
+      const mB = createTestModel({}) 
+
+      const actual = $(mA, equals(mB))
+      const expected = true
+
+      expect(actual).toEqual(expected)
+    })
+
+    it_('returns false if the two models not are equal',()=>{
+      const mA = createTestModel({value: 222}) 
+      const mB = createTestModel({}) 
+
+      const actual = $(mA, equals(mB))
+      const expected = false
 
       expect(actual).toEqual(expected)
     })

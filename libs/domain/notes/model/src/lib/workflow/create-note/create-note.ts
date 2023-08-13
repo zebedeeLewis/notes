@@ -161,6 +161,10 @@ export module _CreateNote {
     =  (n: Command)
     => Promise<NoteCreated>
 
+  type safelyPersistNoteCreation
+    =  (a: PersistNoteAdapter)
+    => (c: Command)
+    => TaskEither<Err.PersistNoteError, NoteCreated>
   /**
    * A function that ensures that the persistence adapter never throws.
    *
@@ -169,10 +173,6 @@ export module _CreateNote {
    * - or the result of calling the adapter which is assumed to
    *   be a note created event.
    */
-  type safelyPersistNoteCreation
-    =  (a: PersistNoteAdapter)
-    => (c: Command)
-    => TaskEither<Err.PersistNoteError, NoteCreated>
   const safelyPersistNoteCreation: safelyPersistNoteCreation
     = adapter => TE.tryCatchK(adapter, Err.persistNoteError)
 
@@ -193,6 +193,10 @@ export module _CreateNote {
     =  (i: Id.Value)
     => Promise<O.Option<Folder>>
 
+  type safelyGetTargetFolder
+    =  (a2: RetrieveFolderAdapter)
+    => (i: Id.Value)
+    => TaskEither<Err.RetrieveFolderError, Option<Folder>>
   /**
    * A function that ensures that the retrieve folder adapter never throws.
    *
@@ -200,10 +204,6 @@ export module _CreateNote {
    * - Either a retrieve folder error if the adapter throws
    * - or the result of calling the adapter
    */
-  type safelyGetTargetFolder
-    =  (a2: RetrieveFolderAdapter)
-    => (i: Id.Value)
-    => TaskEither<Err.RetrieveFolderError, Option<Folder>>
   const safelyGetTargetFolder: safelyGetTargetFolder
     = a2 => TE.tryCatchK(a2, Err.retrieveFolderError)
 
@@ -228,6 +228,10 @@ export module _CreateNote {
     =  (i: Id.Value)
     => Promise<Option<AccessControlList>>
 
+  type safelyCallACLAdapter
+    =  (a2: ACLAdapter)
+    => (i: Id.Value)
+    => TE.TaskEither<Err.ACLPersistenceError, Option<AccessControlList>>
   /**
    * A function that ensure that the "access control list persistence
    * adapter" never throws an error when called.
@@ -237,10 +241,6 @@ export module _CreateNote {
    *     adapter throws an error
    *   - or the result of the adapter call.
    */
-  type safelyCallACLAdapter
-    =  (a2: ACLAdapter)
-    => (i: Id.Value)
-    => TE.TaskEither<Err.ACLPersistenceError, Option<AccessControlList>>
   export const safelyCallACLAdapter: safelyCallACLAdapter
     = a2 => TE.tryCatchK(a2, Err.aclPersistenceError)
 
@@ -260,6 +260,9 @@ export module _CreateNote {
     =  ()
     => Promise<Option<Id.Value>>
 
+  type safelyGetUId
+    =  (a3: AuthAdapter)
+    => TaskEither<Err.AuthenticationError, Option<Id.Value>>
   /**
    * A function that ensure the authentication adapter never throws.
    *
@@ -269,9 +272,6 @@ export module _CreateNote {
    *   - nothing if the there is no authenticated user
    *   - the authenticated users id
    */
-  type safelyGetUId
-    =  (a3: AuthAdapter)
-    => TaskEither<Err.AuthenticationError, Option<Id.Value>>
   export const safelyGetUId: safelyGetUId
     = a3 => TE.tryCatch(a3, Err.authenticationError)
 
@@ -286,6 +286,9 @@ export module _CreateNote {
     , clock: clock
     }
 
+  type checkUserAccessViaFolderOwner
+    =  (q: AccessQuery.Model)
+    => AccessState.AuthorizationState
   /**
    * A function that executes the given access query.
    *
@@ -297,9 +300,6 @@ export module _CreateNote {
    *   - an authorized query state
    *   - an unauthorized query state
    */
-  type checkUserAccessViaFolderOwner
-    =  (q: AccessQuery.Model)
-    => AccessState.AuthorizationState
   export const checkUserAccessViaFolderOwner: checkUserAccessViaFolderOwner
     = query => $(
       query,
@@ -310,6 +310,10 @@ export module _CreateNote {
         constant(AccessState.unauthorized({query})),
         constant(AccessState.authorized({query})) ))
 
+  type filterQueriedUsersACLs
+    =  (q: AccessQuery.Model)
+    => (l: Array<AccessControl.Value>)
+    => Array<AccessControl.Value>
   /**
    * A function that reduces a list of access controls to only those
    * matching that of the user id in the given access query.
@@ -318,14 +322,14 @@ export module _CreateNote {
    * - a new array where every item has an id matching the given user id
    * - an empty array if no item matches the given user id
    */
-  type filterQueriedUsersACLs
-    =  (q: AccessQuery.Model)
-    => (l: Array<AccessControl.Value>)
-    => Array<AccessControl.Value>
   export const filterQueriedUsersACLs: filterQueriedUsersACLs
     = query => 
       filter(_(attr('user'), equals($(query, attr('user')))))
 
+  type hasPermission
+    =  (p: Permission.Value)
+    => (a: Array<AccessControl.Value>)
+    => boolean
   /**
    * A function that checks if the given permission exists in the list of
    * access controls.
@@ -336,10 +340,6 @@ export module _CreateNote {
    * - true if at least one access control exists in the list with
    *   the given permission
    */
-  type hasPermission
-    =  (p: Permission.Value)
-    => (a: Array<AccessControl.Value>)
-    => boolean
   export const hasPermission: hasPermission
     = p => _(
       findFirst(_(attr('permission'), equals(p))),
@@ -347,6 +347,10 @@ export module _CreateNote {
         constFalse,
         constTrue ))
 
+  type checkUserAccessViaACL
+    =  (a4: ACLAdapter)
+    => (q: AccessQuery.Model)
+    => TaskEither<Err.ACLPersistenceError, AccessState.AuthorizationState>
   /**
    * A function that determines if the given command is authorized
    * for the given user, according to the given "access control list".
@@ -359,10 +363,6 @@ export module _CreateNote {
    *   - an authorized query state
    *   - an unauthorized query state
    */
-  type checkUserAccessViaACL
-    =  (a4: ACLAdapter)
-    => (q: AccessQuery.Model)
-    => TaskEither<Err.ACLPersistenceError, AccessState.AuthorizationState>
   export const checkUserAccessViaACL: checkUserAccessViaACL
     = a4 => query => $(
       query,
@@ -378,6 +378,10 @@ export module _CreateNote {
             constant(AccessState.unauthorized({query})),
             constant(AccessState.authorized({query})) )))))
 
+  type openFolderAccessQueryForUser
+    =  (u: Id.Value)
+    => (f: Folder)
+    => AccessQuery.Model
   /**
    * A function that opens a new access query on the given folder by
    * the given user.
@@ -385,13 +389,13 @@ export module _CreateNote {
    * @returns
    * - a new access query
    */
-  type openFolderAccessQueryForUser
-    =  (u: Id.Value)
-    => (f: Folder)
-    => AccessQuery.Model
   export const openFolderAccessQueryForUser: openFolderAccessQueryForUser
     = user => resource => AccessQuery.of({user, resource})
 
+  type executeAccessQuery
+    =  (a4: ACLAdapter)
+    => (q: AccessQuery.Model)
+    => TaskEither<Err.ACLPersistenceError, AccessState.AuthorizationState>
   /**
    * A function that executes the given access query.
    *
@@ -405,18 +409,20 @@ export module _CreateNote {
    *   - an authorized query state
    *   - an unauthorized query state
    */
-  type executeAccessQuery
-    =  (a4: ACLAdapter)
-    => (q: AccessQuery.Model)
-    => TaskEither<Err.ACLPersistenceError, AccessState.AuthorizationState>
   export const executeAccessQuery: executeAccessQuery
     = a4 => _(
       checkUserAccessViaFolderOwner,
-      AccessState.switchCase({
+      AccessState.cond({
         AccessUnauthorized: _(attr('query'), checkUserAccessViaACL(a4)),
-        AccessAuthorized: TE.right  }))
+        AccessAuthorized: _(TE.right) }))
 
 
+  type checkUserAccess
+    =  (a2: RetrieveFolderAdapter)
+    => (a3: AuthAdapter)
+    => (a4: ACLAdapter)
+    => (c:  Command)
+    => TaskEither<WorkflowError, CreateNoteFailed|Command>
   /**
    * A function that verifies that a user is authorized to perform the
    * given command.
@@ -441,12 +447,6 @@ export module _CreateNote {
    *     authorized to execute the command.
    *
    */
-  type checkUserAccess
-    =  (a2: RetrieveFolderAdapter)
-    => (a3: AuthAdapter)
-    => (a4: ACLAdapter)
-    => (c: Command)
-    => TaskEither<WorkflowError, CreateNoteFailed|Command>
   export const checkUserAccess: checkUserAccess
     = a2 => a3 => a4 => command => $(
       safelyGetUId(a3),
@@ -462,12 +462,26 @@ export module _CreateNote {
           uid => $(
             maybeTargetFolder, O.matchW(
               constTaskRight(targetNotFound({})),
-              _( openFolderAccessQueryForUser(uid),
-                 executeAccessQuery(a4),
-                 TE.map(AccessState.switchCase<CreateNoteFailed|Command>({
-                   AccessUnauthorized: constant(unauthorizedCommand({})),
-                   AccessAuthorized: constant(command) })))))))))
+              _(openFolderAccessQueryForUser(uid),
+                executeAccessQuery(a4),
+                TE.map(AccessState.cond({
+                  AccessUnauthorized: constant(unauthorizedCommand({})),
+                  AccessAuthorized: constant(command) })))))))))
 
+  // TODO!!!
+  type isAuth
+    =  (c: Command)
+    => (x: AccessState.AuthorizationState)
+    => CreateNoteFailed|Command
+  export const isAuth: isAuth
+    = c => _(AccessState.cond({
+        AccessUnauthorized: constant(unauthorizedCommand({})),
+        AccessAuthorized: constant(c) }))
+
+  type setEventTimeUsingClock
+    =  (c: clock)
+    => (e: TaskEither<WorkflowError, WorkflowEvent>)
+    => TaskEither<WorkflowError, WorkflowEvent>
   /**
    * A function that sets the given event time using the time provided
    * by the given clock function.
@@ -476,10 +490,6 @@ export module _CreateNote {
    *    - either a ClockError if some error occurs within the clock
    *    - or the updated event with the event time set.
    */
-  type setEventTimeUsingClock
-    =  (c: clock)
-    => (e: TaskEither<WorkflowError, WorkflowEvent>)
-    => TaskEither<WorkflowError, WorkflowEvent>
   export const setEventTimeUsingClock: setEventTimeUsingClock
     = clock => _(
     TE.bindTo('event'),
@@ -490,28 +500,28 @@ export module _CreateNote {
 
     TE.map(({event, time}) =>$(event, update({time}))) )
 
+  type setEventCommand
+    =  (c: Command)
+    => (e: TaskEither<WorkflowError, WorkflowEvent>)
+    => TaskEither<WorkflowError, WorkflowEvent>
   /**
    * A function that sets the command that resulted in the given event.
    *
    * @returns
    * - the updated event with the command set to the given command id.
    */
-  type setEventCommand
-    =  (c: Command)
-    => (e: TaskEither<WorkflowError, WorkflowEvent>)
-    => TaskEither<WorkflowError, WorkflowEvent>
   export const setEventCommand: setEventCommand
     = c => TE.map(update({command: $(c, attr('id'))}))
 
+  type configure
+    =  (d: Dependencies)
+    => workflow
   /**
    * TODO!!!
    *
    * configure the create note workflow. Provides the workflow
    * function with the needed adapters and other dependencies.
    */
-  type configure
-    =  (d: Dependencies)
-    => workflow
   export const configure: configure
     = ({ persistNoteAdapter: a1
        , retrieveFolderAdapter: a2

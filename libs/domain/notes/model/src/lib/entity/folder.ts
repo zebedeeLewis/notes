@@ -13,11 +13,11 @@ export module FolderEntity {
     { [ImmutableModel.Tag]: 'FolderEntity'
     , id: Id.Value
     , name: Str.Value
-    , creation_time: Time.Value
+    , creationTime: Time.Value
     , parent: Option<Model>
     , owner: Id.Value
     , creator: Id.Value
-    , access_control_list: AccessControlListEntity.Model
+    , accessControlList: AccessControlListEntity.Model
     , }
   
   export type Model
@@ -30,11 +30,11 @@ export module FolderEntity {
     = { [ImmutableModel.Tag]: 'FolderEntity'
       , id: __(randomUUID(), Id.of)
       , name: __(idStr, Str.of)
-      , creation_time: Time.of(new Date())
+      , creationTime: Time.of(new Date())
       , parent: none
       , owner: defaultCreator
       , creator: defaultCreator
-      , access_control_list: AccessControlListEntity.of({})
+      , accessControlList: AccessControlListEntity.of({})
       , }
   
   type of

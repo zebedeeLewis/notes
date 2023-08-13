@@ -86,6 +86,6 @@ export module AccessState {
       , AccessUnauthorized: ofType<Unauthorized>()
       , })
 
-  export const switchCase: typeof AuthorizationState.matchStrict
-    = AuthorizationState.matchStrict
+  export const cond: typeof AuthorizationState.match
+    = AuthorizationState.match
 }
