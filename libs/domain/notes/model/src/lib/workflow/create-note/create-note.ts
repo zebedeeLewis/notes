@@ -468,16 +468,6 @@ export module _CreateNote {
                   AccessUnauthorized: constant(unauthorizedCommand({})),
                   AccessAuthorized: constant(command) })))))))))
 
-  // TODO!!!
-  type isAuth
-    =  (c: Command)
-    => (x: AccessState.AuthorizationState)
-    => CreateNoteFailed|Command
-  export const isAuth: isAuth
-    = c => _(AccessState.cond({
-        AccessUnauthorized: constant(unauthorizedCommand({})),
-        AccessAuthorized: constant(c) }))
-
   type setEventTimeUsingClock
     =  (c: clock)
     => (e: TaskEither<WorkflowError, WorkflowEvent>)
