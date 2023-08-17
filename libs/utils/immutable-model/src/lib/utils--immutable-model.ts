@@ -1,94 +1,38 @@
-import { reduce } from 'fp-ts/lib/Array'
 import
 { flow as _
-, pipe as __
-, apply
+, pipe as $
 , unsafeCoerce
 , } from 'fp-ts/lib/function'
-import { RecordOf, Record, is } from 'immutable'
+import { set as _set, get as _get } from 'spectacles-ts'
+import { Lens } from 'monocle-ts'
+import { has, and } from 'ramda'
+import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord'
 
 export const Tag = '_tag' as const
 export type Tag = typeof Tag
 
-export interface Schema
-  { [Tag]: string }
+export interface TaggedModel<T> extends ReadonlyRecord<Tag, T>
+  {}
 
-export type TaggedModel<S extends Schema>
-  = RecordOf<S>
-
-type TaggedModelSchema<T> = T extends TaggedModel<infer S> ? S : never
-type ModelProps<T> = T extends TaggedModel<infer S> ? keyof S : never
-
-/**
- * Create an Immutable Record where the descriptive name is
- * set to the value of the records "_tag" property.
- */
 type factory
-  =  <S extends Schema>(d: S)
-  => (i: Partial<S>)
-  => TaggedModel<S>
+  =  <T, M extends TaggedModel<T>>(d: M)
+  => (i: Partial<M>)
+  => M
+/** Create a an immutable object */
 export const factory: factory
-  = d => Record(d, d[Tag])
+  = d => i => Object.freeze({... d, ... i})
 
-/**
- * A function that gets the value of a given property.
- *
- * @returns
- *   - the value that the given property was set to
- *   - or a default value if the property was not explicitly
- *     set.
- */
-type get
-  =  <M extends TaggedModel<any>, K extends ModelProps<M>>(k: K)
-  => (m: M)
-  => M[K]
-export const get: get
-  = k => m => m[k]
+/** Generic gype guard for tagged models */
+export const isTaggedModel
+  = <T, M extends TaggedModel<T>>(obj: unknown): obj is M => {
+    const m = unsafeCoerce<unknown, M>(obj)
 
-/**
- * A function that sets the value of a given property.
- *
- * @returns
- *   - A copy of the given model, where all property values are
- *     the same except for the selected property which is set
- *     to the given value.
- */
-export type set
-  =  <M extends TaggedModel<any>, K extends ModelProps<M>>(k: K)
-  => (v: TaggedModelSchema<M>[K])
-  => (m: M)
-  => M
-export const set: set
-  = k => v => m => m.set(k, v)
+    return $(
+      $(m, m=>m instanceof Object),
+      and($(m, has('_tag'))) )
+  }
 
-/**
- * A function that copies the value of one property to another property
- */
-type transferProp
-  =  <M extends TaggedModel<any>, K1 extends ModelProps<M>>(k1: K1)
-  => <K2 extends ModelProps<M>>(k1: K2)
-  => (m: M)
-  => M
-export const transferProp: transferProp
-  = key1 => key2 => m => __(
-    get(key1)(m),
-    set(key2),
-    apply(m) )
-
-type equals
-  =  <M extends TaggedModel<any>>(ma: M)
-  => (mb: M)
-  => boolean
-export const equals: equals
-  = ma => mb => is(ma, mb)
-
-type update
-  =  <M extends TaggedModel<any>>
-     (u: Partial<TaggedModelSchema<M>>)
-  => (m: M)
-  => M
-export const update: update
-  = u => m => __(
-  Object.keys(u),
-  unsafeCoerce<string[], Array<keyof (typeof u)>>,
-  reduce(m, (m, k)=>m.set(k, u[k])) )
+export function getTag<T, M extends TaggedModel<T>>
+  (m: M): M[typeof Tag] {
+    return Lens.fromProp<M>()(Tag).get(m)
+  }

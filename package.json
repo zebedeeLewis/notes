@@ -13,6 +13,7 @@
     "@nx/workspace": "16.5.0",
     "@types/jest": "^29.4.0",
     "@types/node": "18.7.1",
+    "@types/ramda": "^0.29.3",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "eslint": "~8.15.0",
@@ -29,6 +30,8 @@
   "dependencies": {
     "@morphic-ts/adt": "^3.0.0",
     "fp-ts": "^2.16.0",
+    "monocle-ts": "^2.3.13",
+    "ramda": "^0.29.0",
     "spectacles-ts": "^1.0.7",
     "tslib": "^2.3.0"
   }

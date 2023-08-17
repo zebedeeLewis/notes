@@ -1,5 +1,5 @@
 import * as E from "fp-ts/lib/Either"
-import { flow as _ , pipe as __ } from 'fp-ts/function'
+import { flow as _ , pipe as __, identity } from 'fp-ts/function'
 
 import { it_ } from '@notes/utils/test'
 import { safelyCallClock, clockError } from './utils-clock'

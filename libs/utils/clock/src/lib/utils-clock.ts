@@ -9,6 +9,7 @@
  * you want it to be, making the time a controlled variable without the
  * need for any special "mocking" capability from the test runner.
  */
+
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Either, tryCatch } from 'fp-ts/lib/Either'
 
@@ -24,18 +25,18 @@ export type clock
 export const clock: clock
   = () => new Date()
 
-interface ClockErrorSchema { [ImmutableModel.Tag]: 'ClockError' }
+const TAG = 'ClockError'
+type TAG = typeof TAG
 
-export type ClockError
-  = TaggedModel<ClockErrorSchema>
+interface ClockError extends TaggedModel<TAG>
+  { [ImmutableModel.Tag]: TAG }
 
 type clockError
   =  ()
   => ClockError
 export const clockError: clockError
-  = () => factory<
-      ClockErrorSchema
-    >({[ImmutableModel.Tag]: 'ClockError'})({})
+  = () => factory<TAG,ClockError >(
+    {[ImmutableModel.Tag]: TAG})({})
 
 /**
  * A function that makes the given clock function "safe" by catching
