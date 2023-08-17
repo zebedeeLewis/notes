@@ -1,20 +1,22 @@
-import { has, and, or, equals, is, all } from 'ramda'
+import { has, and, equals, is, all } from 'ramda'
 import { get as attr } from 'spectacles-ts'
 import {randomUUID} from 'crypto'
 import
 { flow as _
 , pipe as $
 , unsafeCoerce
-, identity } from 'fp-ts/lib/function'
+, } from 'fp-ts/lib/function'
 import { map } from 'fp-ts/Array'
+import { Apply } from 'fp-ts/Identity'
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { Str, Bool, Id } from '@notes/domain/shared/value-object'
 
 import { NoteAccessControl } from '../entity/note-access-control'
 
-import NoteAccessControlEnity = NoteAccessControl.NoteAccessControlEntity
+import NoteAccessControlEntity = NoteAccessControl.NoteAccessControlEntity
 import TaggedModel = ImmutableModel.TaggedModel
+import note_access_control_fn = NoteAccessControl.note_access_control_fn
 import isNoteAccessControl = NoteAccessControl.isNoteAccessControl
 import factory = ImmutableModel.factory
 import isTaggedModel = ImmutableModel.isTaggedModel
@@ -72,7 +74,7 @@ export module CreateNoteCommand {
     , name: Str.Value
     , content: Str.Value
     , isImportant: Bool.Value
-    , acl: [NoteAccessControlEnity]
+    , acl: [NoteAccessControlEntity]
     , targetFolder: Id.Value
     , }
   
@@ -127,10 +129,10 @@ export module CreateNoteCommand {
   /** This is a template */
   export const create_note_command_fn: create_note_command_fn
     = m => sequenceT(Apply)(
-      $(m, attr('id'), _(id_fn)),
-      $(m, attr('name'), _(str_fn)),
-      $(m, attr('content'), _(str_fn)),
-      $(m, attr('isImportant'), _(bool_fn)),
-      $(m, attr('targetFolder'), _(id_fn)),
-      $(m, attr('acl'), _(map(note_access_control_fn))))
+      $(m, attr('id'), id_fn),
+      $(m, attr('name'), str_fn),
+      $(m, attr('content'), str_fn),
+      $(m, attr('isImportant'), bool_fn),
+      $(m, attr('targetFolder'), id_fn),
+      $(m, attr('acl'), map(note_access_control_fn)) )
 }
