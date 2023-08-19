@@ -16,9 +16,6 @@
     "baseUrl": ".",
     "paths": {
       "@notes/domain/notes/model": ["libs/domain/notes/model/src/index.ts"],
-      "@notes/domain/shared/value-object": [
-        "libs/domain/shared/value-object/src/index.ts"
-      ],
       "@notes/utils/clock": ["libs/utils/clock/src/index.ts"],
       "@notes/utils/immutable-model": [
         "libs/utils/immutable-model/src/index.ts"

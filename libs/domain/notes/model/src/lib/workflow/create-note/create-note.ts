@@ -21,7 +21,7 @@ import
 , Id
 , Permission
 , Time
-, } from '@notes/domain/shared/value-object'
+, } from '../../value-object'
 import { ClockError, clock, safelyCallClock } from '@notes/utils/clock'
 
 import { CreateNoteCommand } from '../../command/create-note'

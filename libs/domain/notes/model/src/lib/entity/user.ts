@@ -1,5 +1,5 @@
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { Str, Id } from '@notes/domain/shared/value-object'
+import { Str, Id } from '../value-object'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory

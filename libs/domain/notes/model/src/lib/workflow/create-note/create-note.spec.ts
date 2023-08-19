@@ -10,7 +10,7 @@ import
 { Id
 , Time
 , AccessControl
-, Permission } from '@notes/domain/shared/value-object'
+, Permission } from '../../value-object'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 import { CreateNoteCommand } from '../../command/create-note'
 import { NoteCreatedEvent } from '../../event/note-created'

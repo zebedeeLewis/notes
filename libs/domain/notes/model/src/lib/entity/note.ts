@@ -1,7 +1,7 @@
 import {randomUUID} from 'crypto'
 import { flow as _, pipe as __ } from 'fp-ts/lib/function'
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { Str, Time, Bool, Id } from '@notes/domain/shared/value-object'
+import { Str, Time, Bool, Id } from '../value-object'
 import { AccessControlListEntity } from './access-control-list'
 
 import TaggedModel = ImmutableModel.TaggedModel

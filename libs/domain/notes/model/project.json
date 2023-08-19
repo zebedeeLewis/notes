@@ -16,7 +16,7 @@
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "libs/domain/notes/model/jest.config.ts",
-        "passWithNoTests": true
+        "passWithNoTests": true,
       },
       "configurations": {
         "ci": {

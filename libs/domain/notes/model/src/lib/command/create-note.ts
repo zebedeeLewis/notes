@@ -10,8 +10,8 @@ import { map } from 'fp-ts/Array'
 import { Apply } from 'fp-ts/Identity'
 import { sequenceT } from 'fp-ts/lib/Apply'
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { Str, Bool, Id } from '@notes/domain/shared/value-object'
 
+import { Str, Bool, Id } from '../value-object'
 import { NoteAccessControl } from '../entity/note-access-control'
 
 import NoteAccessControlEntity = NoteAccessControl.NoteAccessControlEntity
@@ -33,7 +33,7 @@ export module CreateNoteCommand {
   type TAG = typeof TAG
 
   /**
-   * CreateNoteCommand is an frozen object literal. It represents the
+   * CreateNoteCommand is a frozen object literal. It represents the
    * command that initiates the "create note workflow", which should
    * result in a new note create.
    * 
@@ -63,7 +63,7 @@ export module CreateNoteCommand {
    *   , name: Str.of('ef07500f-3291-4ef6-aaba-6ba63937a2cf')
    *   , content: Str.of('random note content')
    *   , isImportant: Bool.True
-   *   , acl: [NoteAccessControl.of({permission: NotePermission.UPDATE})]
+   *   , acl: [NoteAccessControl.of({permission: NotePermissionValue})]
    *   , targetFolder: Id.of('d9af8ff4-3989-43f5-8f74-3a49c0cc2f08')
    *   , })
    * ```
@@ -86,12 +86,12 @@ export module CreateNoteCommand {
   export const of: of
     = factory<TAG, CreateNoteCommand>(
       { [ImmutableModel.Tag]: TAG
-      , id: __(idStr, Id.of)
-      , name: __(idStr, Str.of)
+      , id: $(idStr, Id.of)
+      , name: $(idStr, Str.of)
       , content: Str.of('default content')
       , isImportant: Bool.False
       , acl: [NoteAccessControl.of({})]
-      , targetFolder: __(randomUUID(), Id.of)
+      , targetFolder: $(randomUUID(), Id.of)
       , })
 
   /** Access Control type guard */
@@ -120,7 +120,7 @@ export module CreateNoteCommand {
 
         and($(m, has('acl'))),
         and($(m, attr('acl'), is(Array))),
-        and($(m, attr('acl'), all(isNoteAccessControl) )) )
+        and($(m, attr('acl'), all(isNoteAccessControl) )))
     }
 
   type create_note_command_fn

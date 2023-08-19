@@ -2,7 +2,7 @@ import {randomUUID} from 'crypto'
 import { pipe as __, flow as _ } from 'fp-ts/function'
 
 import { ImmutableModel } from '@notes/utils/immutable-model'
-import { Time, Id } from '@notes/domain/shared/value-object'
+import { Time, Id } from '../value-object'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory

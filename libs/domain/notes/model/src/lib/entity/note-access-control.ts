@@ -13,7 +13,7 @@ import
 , ReadPermission
 , UpdatePermission
 , DeletePermission
-, } from '@notes/domain/shared/value-object'
+, } from '../value-object'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory

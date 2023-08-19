@@ -5,7 +5,8 @@ import
 , } from 'fp-ts/lib/function'
 import { set as _set, get as _get } from 'spectacles-ts'
 import { Lens } from 'monocle-ts'
-import { has, and } from 'ramda'
+import { has, and, isNil } from 'ramda'
+import { isPlainObject } from 'ramda-extension'
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord'
 
 export const Tag = '_tag' as const
@@ -26,10 +27,13 @@ export const factory: factory
 export const isTaggedModel
   = <T, M extends TaggedModel<T>>(obj: unknown): obj is M => {
     const m = unsafeCoerce<unknown, M>(obj)
+    if ($(m, isNil)) return false
 
     return $(
-      $(m, m=>m instanceof Object),
-      and($(m, has('_tag'))) )
+      $(m, isPlainObject),
+      unsafeCoerce<unknown, boolean>,
+      and($(m, has('_tag')))
+    )
   }
 
 export function getTag<T, M extends TaggedModel<T>>

@@ -32,6 +32,7 @@
     "fp-ts": "^2.16.0",
     "monocle-ts": "^2.3.13",
     "ramda": "^0.29.0",
+    "ramda-extension": "^0.12.0",
     "spectacles-ts": "^1.0.7",
     "tslib": "^2.3.0"
   }

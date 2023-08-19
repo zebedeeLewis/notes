@@ -4,7 +4,7 @@ import { makeADT, ofType, ADT} from '@morphic-ts/adt'
 import
 { Id
 , Permission
-, } from '@notes/domain/shared/value-object'
+, } from '../../value-object'
 import { ImmutableModel } from '@notes/utils/immutable-model'
 
 import { FolderEntity } from '../../entity/folder'

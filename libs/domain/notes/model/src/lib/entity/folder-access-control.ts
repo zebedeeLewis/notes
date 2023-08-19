@@ -13,7 +13,7 @@ import
 , ReadPermission
 , UpdatePermission
 , DeletePermission
-, } from '@notes/domain/shared/value-object'
+, } from '../value-object'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
@@ -71,7 +71,7 @@ export namespace FolderAccessControl {
    *
    * @example
    * ```
-   * // Grant read access on the given reasource to the user
+   * // Grant read access on reasource to the user
    * const myReadFolderAccessControl = 
    *   { [ImmutableModel.Tag]: 'FolderAccessControlValue'
    *   , id: Id.of('fe29abef-13d5-4737-8470-c6c448faf364')
@@ -80,7 +80,7 @@ export namespace FolderAccessControl {
    *   , permission: ReadPermissionValue
    *   , }
    *
-   * // Grant create access on the given reasource to the user
+   * // Grant create access on reasource to the user
    * const myCreateFolderAccessControl = 
    *   { [ImmutableModel.Tag]: 'FolderAccessControlValue'
    *   , id: Id.of('fe29abef-13d5-4737-8470-c6c448faf364')
