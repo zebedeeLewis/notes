@@ -1,4 +1,4 @@
-import { has, and, type, equals } from 'ramda'
+import { has, and, equals, is } from 'ramda'
 import { flow as _, pipe as $, unsafeCoerce, identity} from 'fp-ts/function'
 import { get as attr } from 'spectacles-ts'
 import {ImmutableModel} from '@notes/utils/immutable-model'
@@ -8,45 +8,45 @@ import factory = ImmutableModel.factory
 import isTaggedModel = ImmutableModel.isTaggedModel
 import getTag = ImmutableModel.getTag
 
-export module Str {
-  const TAG = 'StrValue'
+export module Time {
+  const TAG = 'TimeValue'
   type TAG = typeof TAG
 
   /**
-   * StrValue is frozen object literal that wraps a string, interpreted
-   * as a simple string.
+   * TimeValue is frozen object literal that wraps a Date object.
    */
-  export interface StrValue extends TaggedModel<TAG>
+  interface TimeValue extends TaggedModel<TAG>
     { [ImmutableModel.Tag]: TAG
-    , value: string
+    , value: Date
     , }
-  export type Value = StrValue
+
+  export type Value = TimeValue
   
   type of
-    =  (v: string)
-    => StrValue
+    =  (v: Date)
+    => TimeValue
   export const of: of
-    = value => factory<TAG,StrValue>(
+    = value => factory<TAG,TimeValue>(
       { [ImmutableModel.Tag]: TAG
-      , value: ''
+      , value: new Date()
       , })({value})
 
-  /** String value type guard */
-  export const isStr
-    = (obj: unknown): obj is StrValue => {
-      const m = unsafeCoerce<unknown, StrValue>(obj)
+  /** Id value type guard */
+  export const isTime
+    = (obj: unknown): obj is TimeValue => {
+      const m = unsafeCoerce<unknown, TimeValue>(obj)
 
       return $(
         isTaggedModel(m),
         and($(m, getTag, equals(TAG))),
         and($(m, has('value'))),
-        and($(m, attr('value'), _(type, equals('String')))) )
+        and($(m, attr('value'), is(Date))) )
     }
 
   /** This is a template */
-  type str_fn
-    = (m: StrValue)
+  type time_fn
+    = (m: TimeValue)
     => any
-  export const str_fn: str_fn
+  export const time_fn: time_fn
     = _( attr('value'), identity )
 }

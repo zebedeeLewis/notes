@@ -1,5 +1,4 @@
 import { flow as _, pipe as $, unsafeCoerce, constant} from 'fp-ts/function'
-import { or } from 'ramda'
 import { makeADT, ADT, ofType } from '@morphic-ts/adt'
 import { Model } from "./model"
 import {ImmutableModel} from '@notes/utils/immutable-model'
@@ -17,7 +16,7 @@ export module Operator {
   const _BoolADT: ADT<Bool, ImmutableModel.Tag>
     = makeADT(ImmutableModel.Tag)(
     { [TRUE]: ofType<True>()
-    , [FALSE]:   ofType<False>()
+    , [FALSE]: ofType<False>()
     , })
 
   export const cond: typeof _BoolADT.match
@@ -27,11 +26,10 @@ export module Operator {
   export const isBool
     = (obj: unknown): obj is Bool => {
     const m = unsafeCoerce<unknown, Bool>(obj)
-    if(! $(m, isTaggedModel)) return false
 
-    return $(
-      $($(m, _BoolADT.is[TRUE]),
-      or($(m, _BoolADT.is[FALSE])) ))}
+    return (
+      $(m, isTaggedModel)
+      &&($(m, _BoolADT.is[TRUE]) || $(m, _BoolADT.is[FALSE]) ))}
 
   type fn_on_bool
     =  (m: Bool)

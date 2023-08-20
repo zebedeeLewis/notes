@@ -3,13 +3,13 @@ import { Operator } from './operators'
 import { Model } from './model'
 
 import TaggedModel = ImmutableModel.TaggedModel
-import CreatePermission = Model.CreatePermission
+import DeletePermission = Model.DeletePermission
 
 import factory = ImmutableModel.factory
-import isCreatePermission = Operator.isCreatePermission
+import isDeletePermission = Operator.isDeletePermission
 
-describe('CreatePermission', ()=>{
-  describe('isCreatePermission()', ()=>{
+describe('DeletePermission', ()=>{
+  describe('isDeletePermission()', ()=>{
     interface R extends TaggedModel<'r'>{}
     const R: R = {[ImmutableModel.Tag]: 'r'}
     const RandomModel = factory<'r',R>(
@@ -26,9 +26,9 @@ describe('CreatePermission', ()=>{
       ${undefined}        | ${false}
       ${{}}               | ${false}
       ${RandomModel}      | ${false}
-      ${CreatePermission} | ${true}
+      ${DeletePermission} | ${true}
       `('produces false for $input', ({input,expected})=>{
-        expect(isCreatePermission(input)).toBe(expected)
+        expect(isDeletePermission(input)).toBe(expected)
       })
     })
   })

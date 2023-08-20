@@ -7,19 +7,19 @@ import getTag = ImmutableModel.getTag
 import isTaggedModel = ImmutableModel.isTaggedModel
 
 export module Operator {
-  /** CreatePermission value type guard */
-  export const isCreatePermission
-    = (obj: unknown): obj is Model.CreatePermission => {
-    const m = unsafeCoerce<unknown, Model.CreatePermission>(obj)
+  /** ReadPermission value type guard */
+  export const isReadPermission
+    = (obj: unknown): obj is Model.ReadPermission => {
+    const m = unsafeCoerce<unknown, Model.ReadPermission>(obj)
 
     return (
       $(m, isTaggedModel)
-      && $(m, getTag, equals(Model.CREATE_PERMISSION)) )}
+      && $(m, getTag, equals(Model.READ_PERMISSION)) )}
 
   /** This is a template */
-  type fn_on_createPermission
-    = (m: Model.CreatePermission)
+  type fn_on_readPermission
+    = (m: Model.ReadPermission)
     => unknown
-  export const fn_on_createPermission: fn_on_createPermission
+  export const fn_on_readPermission: fn_on_readPermission
     = _( identity )
 }

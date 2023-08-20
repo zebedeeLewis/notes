@@ -14,6 +14,7 @@
     "@types/jest": "^29.4.0",
     "@types/node": "18.7.1",
     "@types/ramda": "^0.29.3",
+    "@types/validator": "^13.11.1",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "eslint": "~8.15.0",
@@ -34,6 +35,7 @@
     "ramda": "^0.29.0",
     "ramda-extension": "^0.12.0",
     "spectacles-ts": "^1.0.7",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "validator": "^13.11.0"
   }
 }

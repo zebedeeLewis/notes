@@ -1,6 +1,9 @@
 import {Model} from './model'
 import { Operator } from './operators'
 
+export import FALSE = Model.FALSE
+export import TRUE = Model.TRUE
+
 export import Bool = Model.Bool
 export import False = Model.False
 export import True = Model.True
