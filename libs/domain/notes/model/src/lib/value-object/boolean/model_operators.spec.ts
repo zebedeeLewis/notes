@@ -42,7 +42,7 @@ describe('Bool', ()=>{
     })
   })
 
-  describe('const()', ()=>{
+  describe('cond()', ()=>{
     it_('compiles', ()=>{
       type exampleFn
         =  (m: Bool)

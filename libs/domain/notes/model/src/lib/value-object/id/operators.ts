@@ -33,7 +33,8 @@ export module Operator {
         && $(m, getTag, equals(ID))
         && $(m, has('value'))
         && $(m, attr('value'), _(type, equals('String')))
-        && $(m, attr('value'), isUUID) )
+        && $(m, attr('value'), isUUID)
+        && $(m, attr('value'), v=>isUUID(v, 4)) )
     }
 
   /** This is a template */
