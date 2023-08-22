@@ -3,7 +3,10 @@ import { flow as _ } from 'fp-ts/function'
 import {ImmutableModel} from '@notes/utils/immutable-model'
 import { Id } from '../../value-object/id'
 import { FolderPermission  } from '../../value-object/folder-permission'
+import { CreatePermission } from '../../value-object/create-permission'
 import { ReadPermission } from '../../value-object/read-permission'
+import { UpdatePermission } from '../../value-object/update-permission'
+import { DeletePermission } from '../../value-object/delete-permission'
 
 import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
@@ -48,45 +51,53 @@ export module Model {
    export const DEFAULT_USER_ACCESS_CONTROL = FolderAccessControl(
      { id: Id('b182ed10-7019-48c8-aaa9-08528a1f34d5')
      , folder: Id('71647f7f-0122-40a5-9fa8-da173627f9b6')
-     , permission: CreatePermissionValue
+     , permission: CreatePermission
      , })
 
    // only the 'id' attribute set to default
    export const DEFAULT_ID_ACCESS_CONTROL = FolderAccessControl(
      { user: Id('b5911cb3-baa1-4f88-b324-7a737d3aa0af')
      , folder: Id('71647f7f-0122-40a5-9fa8-da173627f9b6')
-     , permission: CreatePermissionValue
+     , permission: CreatePermission
      , })
 
    // only the 'folder' attribute set to default
    export const DEFAULT_FOLDER_ACCESS_CONTROL = FolderAccessControl(
      { id: Id('b182ed10-7019-48c8-aaa9-08528a1f34d5')
      , user: Id('b5911cb3-baa1-4f88-b324-7a737d3aa0af')
-     , permission: CreatePermissionValue
+     , permission: CreatePermission
      , })
    
-   // grants create permissions for a user on a folder
+   // grants a user create permission on a folder
    export const CREATE_ACCESS_CONTROL = FolderAccessControl(
      { id: Id('b182ed10-7019-48c8-aaa9-08528a1f34d5')
      , user: Id('b5911cb3-baa1-4f88-b324-7a737d3aa0af')
      , folder: Id('71647f7f-0122-40a5-9fa8-da173627f9b6')
-     , permission: CreatePermissionValue
+     , permission: CreatePermission
      , })
 
-   // grants read permissions for a user on a folder
+   // grants a user read permission on a folder
    export const READ_ACCESS_CONTROL = FolderAccessControl(
      { id: Id('b182ed10-7019-48c8-aaa9-08528a1f34d5')
      , user: Id('b5911cb3-baa1-4f88-b324-7a737d3aa0af')
      , folder: Id('71647f7f-0122-40a5-9fa8-da173627f9b6')
-     , permission: ReadPermissionValue
+     , permission: ReadPermission
      , })
 
-   // grants update permissions for a user on a folder
+   // grants a user update permission on a folder
    export const UPDATE_ACCESS_CONTROL = FolderAccessControl(
      { id: Id('b182ed10-7019-48c8-aaa9-08528a1f34d5')
      , user: Id('b5911cb3-baa1-4f88-b324-7a737d3aa0af')
      , folder: Id('71647f7f-0122-40a5-9fa8-da173627f9b6')
-     , permission: UpdatePermissionValue
+     , permission: UpdatePermission
+     , })
+
+   // grants a user delete permission on a folder
+   export const DELETE_ACCESS_CONTROL = FolderAccessControl(
+     { id: Id('b182ed10-7019-48c8-aaa9-08528a1f34d5')
+     , user: Id('b5911cb3-baa1-4f88-b324-7a737d3aa0af')
+     , folder: Id('71647f7f-0122-40a5-9fa8-da173627f9b6')
+     , permission: DeletePermission
      , })
 }
 

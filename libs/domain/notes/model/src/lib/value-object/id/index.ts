@@ -10,10 +10,11 @@ export import F_NOT_UUID = Failure.F_NOT_UUID
 export import NotUUIDv4 = Failure.NotUUIDv4
 export import NotString = Failure.NotString
 export import NotUUID = Failure.NotUUID
+export import IdFailure = Failure.IdFailure
 
 export import Id = Model.Id
 
-export import failureCond = Operator.failureCond
+export import idFailureCond = Operator.failureCond
 export import isId = Operator.isId
 export import isIdFailure = Operator.isIdFailure
 export import createId = Model.createId
