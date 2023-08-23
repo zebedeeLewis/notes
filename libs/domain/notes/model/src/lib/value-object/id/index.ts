@@ -11,14 +11,21 @@ export import fn_on_id = Operator.fn_on_id
 export import idAttr = Operator.attr
 
 export namespace id_F {
-  export import NotUUIDv4F = Failure.NotUUIDv4F
+  export import NotUUIDv4T = Failure.NotUUIDv4T
   export import NotUUIDv4 = Failure.NotUUIDv4
 
-  export import NotStringF = Failure.NotStringF
+  export import NotStringT = Failure.NotStringT
   export import NotString = Failure.NotString
 
   export import IdFailure = Failure.IdFailure
 
-  export import match = Operator.failureMatch
+  export import match = Operator.matchFailure
   export import is = Operator.isIdFailure
+}
+
+export namespace development_only {
+  export import MY_ID = Model.MY_ID
+  export import DEFAULT_ID = Model.DEFAULT_ID
+
+  export import fn_on_id = Operator.fn_on_id
 }

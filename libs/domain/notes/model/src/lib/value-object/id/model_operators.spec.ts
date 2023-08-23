@@ -1,34 +1,34 @@
 import { right as rightE, left as leftE } from 'fp-ts/Either'
-import { pipe as $, flow as _ } from 'fp-ts/function'
+import { pipe as $, flow as _, identity } from 'fp-ts/function'
 import {ImmutableModel} from '@notes/utils/immutable-model'
 import { it_, given } from '@notes/utils/test'
 import { Operator } from './operators'
 import { Model } from './model'
 import { Failure } from './failure'
 
+import DEFAULT_ID = Model.DEFAULT_ID
+import MY_ID = Model.MY_ID
 
 import TaggedModel = ImmutableModel.TaggedModel
 import Id = Model.Id
 import NotString = Failure.NotString
-import NotUUID = Failure.NotUUID
 import NotUUIDv4 = Failure.NotUUIDv4
+import NotStringT = Failure.NotStringT
+import NotUUIDv4T = Failure.NotUUIDv4T
 
 import factory = ImmutableModel.factory
-import createId = Model.createId
+import createId = Operator.createId
 import isId = Operator.isId
 import isIdFailure = Operator.isIdFailure
+import matchFailure = Operator.matchFailure
 
-// Some example Id's
-export const DEFAULT_ID = Id()
-export const MY_ID = Id('5aec74c9-548f-48c5-80bd-c9c04604e7cf')
+interface R extends TaggedModel<'r'>{}
+const R: R = {[ImmutableModel.Tag]: 'r'}
+const RandomModel = factory<'r',R>(
+  {[ImmutableModel.Tag]: 'r'})({})
 
 describe('Id', ()=>{
   describe('isId()', ()=>{
-    interface R extends TaggedModel<'r'>{}
-    const R: R = {[ImmutableModel.Tag]: 'r'}
-    const RandomModel = factory<'r',R>(
-      {[ImmutableModel.Tag]: 'r'})({})
-
     describe('it should produce false if `m` is not a Id',()=>{
       test.each`
       input            | expected
@@ -56,15 +56,7 @@ describe('Id', ()=>{
       expect(actual).toEqual(expected)
     })
     describe('it produces a Left<NotString> if `s` is not a string',()=>{
-      test.each`
-      s
-      ${1}
-      ${true}
-      ${false}
-      ${null}
-      ${undefined}
-      ${{}}
-      `('produces false for $s', ({s})=>{
+      test.each([1, true, false, null, undefined, {}, ])('%s', (s: any)=>{
         const expected = $(NotString, leftE)
         
         const actual = createId(s)
@@ -72,14 +64,7 @@ describe('Id', ()=>{
       })
     })
     given('that `s` is a string',()=>{
-      it_('produces Left<NotUUID> if `s` is not a UUID',()=>{
-        const s = 'not a uuid string maaan!!!'
-        const expected = $(NotUUID, leftE)
-        
-        const actual = createId(s)
-        expect(actual).toEqual(expected)
-      })
-      it_('produces Left<NotUUID> if `s` is not a UUIDv4',()=>{
+      it_('produces Left<NotUUIDv4> if `s` is not a UUIDv4',()=>{
         const s = '63b9e2c2-3ef5-11ee-be56-0242ac120002'
         const expected = $(NotUUIDv4, leftE)
         
@@ -92,14 +77,9 @@ describe('Id', ()=>{
 
 describe('IdFailure', ()=>{
   describe('isIdFailure()', ()=>{
-    interface R extends TaggedModel<'r'>{}
-    const R: R = {[ImmutableModel.Tag]: 'r'}
-    const RandomModel = factory<'r',R>(
-      {[ImmutableModel.Tag]: 'r'})({})
-
     describe('it should produce false if `m` is not a IdFailure',()=>{
       test.each`
-      input            | expected
+      m                | expected
       ${1}             | ${false}
       ${"hello"}       | ${false}
       ${true}          | ${false}
@@ -109,10 +89,48 @@ describe('IdFailure', ()=>{
       ${{}}            | ${false}
       ${RandomModel}   | ${false}
       ${NotString}     | ${true}
-      ${NotUUID}       | ${true}
       ${NotUUIDv4}     | ${true}
-      `('produces false for $input', ({input,expected})=>{
-        expect(isIdFailure(input)).toBe(expected)
+      `('produces $expected for $m', ({m,expected})=>{
+        expect(isIdFailure(m)).toBe(expected)
+      })
+    })
+  })
+  describe('matchFailure()',()=>{
+    it_('calls the function mapped to NotUUIDv4T when the input is '
+       +'NotUUIDv4',()=>{
+      const b = 'the string must be a UUIDv4'
+      const a = 'it must be a string'
+
+      const actual = $(
+        NotUUIDv4,
+        matchFailure({
+          [NotUUIDv4T]: ()=>b,
+          [NotStringT]: ()=>a }))
+      
+      expect(actual).toBe(b)
+    })
+    it_('calls the function mapped to NotStringT when the input is '
+       +'NotString',()=>{
+      const b = 'the string must be a UUIDv4'
+      const a = 'it must be a string'
+
+      const actual = $(
+        NotString,
+        matchFailure({
+          [NotUUIDv4T]: ()=>b,
+          [NotStringT]: ()=>a }))
+      
+      expect(actual).toBe(a)
+    })
+    describe('calls the mapped function with the input',()=>{
+      test.each([NotUUIDv4, NotString])('%s', (input)=>{
+        const actual = $(
+          input,
+          matchFailure({
+            [NotUUIDv4T]: identity,
+            [NotStringT]: identity }))
+        
+        expect(actual).toBe(input)
       })
     })
   })

@@ -32,6 +32,11 @@ export module Model {
       , value: 'e9da09d4-8b50-4ac6-ace3-c01b95a27599'
       , })(value?{value}:{})
 
+  // Some example Id's
+  export const DEFAULT_ID = Id()
+  export const MY_ID = Id('5aec74c9-548f-48c5-80bd-c9c04604e7cf')
+
+  // These are the Id input contraints
   type isString
     = (s: string)
     => boolean
