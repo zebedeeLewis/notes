@@ -40,3 +40,12 @@ export function getTag<T, M extends TaggedModel<T>>
   (m: M): M[typeof Tag] {
     return Lens.fromProp<M>()(Tag).get(m)
   }
+
+/**
+ * This function is meant to be used as a placeholder
+ * in template functions. It does nothing.
+ */
+export function s(_s: any): (...a: [any]) => any {
+  return undefined
+}
+

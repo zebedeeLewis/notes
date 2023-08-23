@@ -1,5 +1,7 @@
 import { has, equals } from 'ramda'
 import { get as attr } from 'spectacles-ts'
+import { Lens } from 'monocle-ts'
+import { reduce } from 'fp-ts/Array'
 import { Apply } from 'fp-ts/Identity'
 import { makeADT, ADT, ofType } from '@morphic-ts/adt'
 import { Either, right as rightE } from 'fp-ts/lib/Either'
@@ -111,4 +113,28 @@ export module Operator {
    */
   export const createFolderAccessControl: createFolderAccessControl
     = _(FolderAccessControl, rightE)
+}
+
+export module test {
+  type Getters = {
+    [K in keyof FolderAccessControl]:
+      (s: FolderAccessControl) => FolderAccessControl[K] }
+
+  type Setters = {
+    [K in keyof FolderAccessControl as `${K}As`]
+      :  (k: FolderAccessControl[K])
+      => (s: FolderAccessControl)
+      => FolderAccessControl
+  }
+
+  type Accessors = Getters & Setters
+
+  const myAttr2 = $(
+    Object.keys(FolderAccessControl({})),
+    reduce<keyof FolderAccessControl, Accessors>({} as Accessors, (x, k)=>
+      ({ ... x
+       , [k]: Lens.fromProp<FolderAccessControl>()(k).set
+       , })))
+
+      myAttr2.userAs
 }

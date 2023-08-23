@@ -9,4 +9,5 @@ export module ImmutableModel {
   export const isTaggedModel = _mod.isTaggedModel
 
   export const getTag = _mod.getTag
+  export const s = _mod.s
 }

@@ -1,21 +1,24 @@
 import {Model} from './model'
 import {Failure} from './failure'
-import { Operator } from './operators'
-
-export import ID = Model.ID
-export import F_NOT_UUIDv4 = Failure.F_NOT_UUIDv4
-export import F_NOT_STRING = Failure.F_NOT_STRING
-export import F_NOT_UUID = Failure.F_NOT_UUID
-
-export import NotUUIDv4 = Failure.NotUUIDv4
-export import NotString = Failure.NotString
-export import NotUUID = Failure.NotUUID
-export import IdFailure = Failure.IdFailure
+import { Operator as Operator } from './operators'
 
 export import Id = Model.Id
+export import idT = Model.TAG
 
-export import idFailureCond = Operator.failureCond
 export import isId = Operator.isId
-export import isIdFailure = Operator.isIdFailure
-export import createId = Model.createId
+export import createId = Operator.createId
 export import fn_on_id = Operator.fn_on_id
+export import idAttr = Operator.attr
+
+export namespace id_F {
+  export import NotUUIDv4F = Failure.NotUUIDv4F
+  export import NotUUIDv4 = Failure.NotUUIDv4
+
+  export import NotStringF = Failure.NotStringF
+  export import NotString = Failure.NotString
+
+  export import IdFailure = Failure.IdFailure
+
+  export import match = Operator.failureMatch
+  export import is = Operator.isIdFailure
+}

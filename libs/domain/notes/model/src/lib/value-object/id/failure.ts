@@ -5,23 +5,17 @@ import TaggedModel = ImmutableModel.TaggedModel
 import factory = ImmutableModel.factory
 
 export module Failure {
-  export const F_NOT_STRING = 'NotString'
-  export type F_NOT_STRING = typeof F_NOT_STRING
-  export interface NotString extends TaggedModel<F_NOT_STRING>{}
-  export const NotString = factory<F_NOT_STRING, NotString>(
-    {[ImmutableModel.Tag]: F_NOT_STRING})({})
+  export const NotStringF = 'NotString'
+  export type NotStringF = typeof NotStringF
+  export interface NotString extends TaggedModel<NotStringF>{}
+  export const NotString = factory<NotStringF, NotString>(
+    {[ImmutableModel.Tag]: NotStringF})({})
 
-  export const F_NOT_UUID = 'NotUUID'
-  export type F_NOT_UUID = typeof F_NOT_UUID
-  export interface NotUUID extends TaggedModel<F_NOT_UUID>{}
-  export const NotUUID = factory<F_NOT_UUID, NotUUID>(
-    {[ImmutableModel.Tag]: F_NOT_UUID})({})
-
-  export const F_NOT_UUIDv4 = 'NotUUIDv4'
-  export type F_NOT_UUIDv4 = typeof F_NOT_UUIDv4
-  export interface NotUUIDv4 extends TaggedModel<F_NOT_UUIDv4>{}
-  export const NotUUIDv4 = factory<F_NOT_UUIDv4, NotUUIDv4>(
-    {[ImmutableModel.Tag]: F_NOT_UUIDv4})({})
+  export const NotUUIDv4F = 'NotUUIDv4'
+  export type NotUUIDv4F = typeof NotUUIDv4F
+  export interface NotUUIDv4 extends TaggedModel<NotUUIDv4F>{}
+  export const NotUUIDv4 = factory<NotUUIDv4F, NotUUIDv4>(
+    {[ImmutableModel.Tag]: NotUUIDv4F})({})
 
   /**
    * Represents the failures that could occur when creating a new
@@ -29,6 +23,5 @@ export module Failure {
    */
   export type IdFailure
     = NotString
-    | NotUUID
     | NotUUIDv4
 }
