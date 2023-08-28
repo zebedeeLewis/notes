@@ -1,40 +1,43 @@
 import { flow as _ } from 'fp-ts/function'
 import validator from 'validator'
 import { type, equals } from 'ramda'
-import { ImmutableModel } from '@notes/utils/immutable-model'
-
-import TaggedModel = ImmutableModel.TaggedModel
+import
+{ TaggedRecord
+, mkFactory
+, TAG_PROP
+, } from '@notes/utils/tagged-record'
 
 import isUUID = validator.isUUID
-import factory = ImmutableModel.factory
 
-export module Model {
+export module model {
   export const TAG = 'Id'
   export type TAG = typeof TAG
 
   /**
    * Interpreted as a UUIDv4 string that uniquely identifies an entity
    * within a domain.
+   *
+   * @example
+   * ```
+   * const DEFAULT_ID = Id()
+   * const MY_ID = Id('5aec74c9-548f-48c5-80bd-c9c04604e7cf')
+   * ```
+   * @see {@link examples}
    */
-  export interface Id extends TaggedModel<TAG>
-    { [ImmutableModel.Tag]: TAG
+  export interface Id extends TaggedRecord<TAG>
+    { [TAG_PROP]: TAG
     , readonly value: string
     , }
 
   type IdC
     =  (v?: string)
     => Id
-  /** Produce a new Id from the string 'v'. Assumes that 'v' is a
-   * valid Id input. */
+  /** @constructs Id */
   export const Id: IdC
-    = value => factory<TAG, Id>(
-      { [ImmutableModel.Tag]: TAG
+    = value => mkFactory<Id>(
+      { [TAG_PROP]: TAG
       , value: 'e9da09d4-8b50-4ac6-ace3-c01b95a27599'
       , })(value?{value}:{})
-
-  // Some example Id's
-  export const DEFAULT_ID = Id()
-  export const MY_ID = Id('5aec74c9-548f-48c5-80bd-c9c04604e7cf')
 
   // These are the Id input contraints
   type isString
@@ -50,4 +53,10 @@ export module Model {
   /** Id Constraints */
   export const isUUIDv4: isUUIDv4
     = s => isUUID(s, 4)
+
+  // Some example Id's
+  export namespace examples {
+    export const DEFAULT_ID = Id()
+    export const MY_ID = Id('5aec74c9-548f-48c5-80bd-c9c04604e7cf')
+  }
 }

@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "record": {
+      "factory": "./src/generators/record/generator",
+      "schema": "./src/generators/record/schema.json",
+      "description": "record generator"
+    }
+  }
+}

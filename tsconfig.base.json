@@ -16,10 +16,12 @@
     "baseUrl": ".",
     "paths": {
       "@notes/domain/notes/model": ["libs/domain/notes/model/src/index.ts"],
+      "@notes/generators": ["libs/utils/generators/src/index.ts"],
       "@notes/utils/clock": ["libs/utils/clock/src/index.ts"],
       "@notes/utils/immutable-model": [
         "libs/utils/immutable-model/src/index.ts"
       ],
+      "@notes/utils/tagged-record": ["libs/utils/tagged-record/src/index.ts"],
       "@notes/utils/test": ["libs/utils/test/src/index.ts"]
     }
   },

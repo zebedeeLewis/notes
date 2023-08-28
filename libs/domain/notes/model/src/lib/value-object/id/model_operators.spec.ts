@@ -1,37 +1,34 @@
 import { right as rightE, left as leftE } from 'fp-ts/Either'
 import { pipe as $, flow as _, identity } from 'fp-ts/function'
-import {ImmutableModel} from '@notes/utils/immutable-model'
 import { it_, given } from '@notes/utils/test'
-import { Operator } from './operators'
-import { Model } from './model'
+import
+{ _tagged_record_examples
+, } from '@notes/utils/tagged-record'
+import { operator } from './operators'
+import { model } from './model'
 import { Failure } from './failure'
 
-import DEFAULT_ID = Model.DEFAULT_ID
-import MY_ID = Model.MY_ID
+import dorothy = _tagged_record_examples.PERSON_DEFAULTS
+import examples = model.examples
+import DEFAULT_ID = examples.DEFAULT_ID
+import MY_ID = examples.MY_ID
 
-import TaggedModel = ImmutableModel.TaggedModel
-import Id = Model.Id
+import Id = model.Id
 import NotString = Failure.NotString
 import NotUUIDv4 = Failure.NotUUIDv4
 import NotStringT = Failure.NotStringT
 import NotUUIDv4T = Failure.NotUUIDv4T
 
-import factory = ImmutableModel.factory
-import createId = Operator.createId
-import isId = Operator.isId
-import isIdFailure = Operator.isIdFailure
-import matchFailure = Operator.matchFailure
-
-interface R extends TaggedModel<'r'>{}
-const R: R = {[ImmutableModel.Tag]: 'r'}
-const RandomModel = factory<'r',R>(
-  {[ImmutableModel.Tag]: 'r'})({})
+import createId = operator.createId
+import isId = operator.isId
+import isIdFailure = operator.isIdFailure
+import matchFailure = operator.matchFailure
 
 describe('Id', ()=>{
-  describe('isId()', ()=>{
-    describe('it should produce false if `m` is not a Id',()=>{
+  describe('isId(s)', ()=>{
+    describe('it should produce false if `s` is not a Id',()=>{
       test.each`
-      input            | expected
+      s                | expected
       ${1}             | ${false}
       ${"hello"}       | ${false}
       ${true}          | ${false}
@@ -39,22 +36,15 @@ describe('Id', ()=>{
       ${null}          | ${false}
       ${undefined}     | ${false}
       ${{}}            | ${false}
-      ${RandomModel}   | ${false}
+      ${dorothy}       | ${false}
       ${MY_ID}         | ${true}
       ${DEFAULT_ID}    | ${true}
-      `('produces false for $input', ({input,expected})=>{
-        expect(isId(input)).toBe(expected)
+      `('isId($s) -> $expected', ({s,expected})=>{
+        expect(isId(s)).toBe(expected)
       })
     })
   })
-  describe('createId()', ()=>{
-    it_('produces a Right<Id> value if `s` is a valid UUIDv4 string',()=>{
-      const s = '2f153888-ebef-47d1-a927-95fc840372bc'
-      const expected = $(Id(s), rightE)
-      
-      const actual = createId(s)
-      expect(actual).toEqual(expected)
-    })
+  describe('createId(s)', ()=>{
     describe('it produces a Left<NotString> if `s` is not a string',()=>{
       test.each([1, true, false, null, undefined, {}, ])('%s', (s: any)=>{
         const expected = $(NotString, leftE)
@@ -67,6 +57,13 @@ describe('Id', ()=>{
       it_('produces Left<NotUUIDv4> if `s` is not a UUIDv4',()=>{
         const s = '63b9e2c2-3ef5-11ee-be56-0242ac120002'
         const expected = $(NotUUIDv4, leftE)
+        
+        const actual = createId(s)
+        expect(actual).toEqual(expected)
+      })
+      it_('produces a Right<Id> value if `s` is a valid UUIDv4 string',()=>{
+        const s = '2f153888-ebef-47d1-a927-95fc840372bc'
+        const expected = $(Id(s), rightE)
         
         const actual = createId(s)
         expect(actual).toEqual(expected)
@@ -87,10 +84,11 @@ describe('IdFailure', ()=>{
       ${null}          | ${false}
       ${undefined}     | ${false}
       ${{}}            | ${false}
-      ${RandomModel}   | ${false}
+      ${dorothy}       | ${false}
       ${NotString}     | ${true}
       ${NotUUIDv4}     | ${true}
       `('produces $expected for $m', ({m,expected})=>{
+        console.log('l')
         expect(isIdFailure(m)).toBe(expected)
       })
     })

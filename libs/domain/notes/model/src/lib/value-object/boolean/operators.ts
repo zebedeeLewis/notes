@@ -1,43 +1,39 @@
-import { flow as _, pipe as $, unsafeCoerce, constant} from 'fp-ts/function'
+import { flow as _, pipe as $, constant} from 'fp-ts/function'
 import { makeADT, ADT, ofType } from '@morphic-ts/adt'
-import { Model } from "./model"
-import {ImmutableModel} from '@notes/utils/immutable-model'
+import { model } from "./model"
+import
+{ isTaggedRecord
+, TAG_PROP
+, } from '@notes/utils/tagged-record'
 
-import TRUE = Model.TRUE
-import FALSE = Model.FALSE
+import TrueT = model.TrueT
+import FalseT = model.FalseT
 
-import Bool = Model.Bool
-import True = Model.True
-import False = Model.False
+import Bool = model.Bool
+import True = model.True
+import False = model.False
 
-import isTaggedModel = ImmutableModel.isTaggedModel
+export module operator {
+  const _BoolADT: ADT<Bool, TAG_PROP>
+    = makeADT(TAG_PROP)({
+      [TrueT]: ofType<True>(),
+      [FalseT]: ofType<False>() })
 
-export module Operator {
-  const _BoolADT: ADT<Bool, ImmutableModel.Tag>
-    = makeADT(ImmutableModel.Tag)(
-    { [TRUE]: ofType<True>()
-    , [FALSE]: ofType<False>()
-    , })
-
-  export const cond: typeof _BoolADT.match
+  export const matchBool: typeof _BoolADT.match
     = _BoolADT.match
 
   /** Bool value type guard */
   export const isBool
-    = (obj: unknown): obj is Bool => {
-    const m = unsafeCoerce<unknown, Bool>(obj)
-
-    return (
-      $(m, isTaggedModel)
-      &&($(m, _BoolADT.is[TRUE]) || $(m, _BoolADT.is[FALSE]) ))}
+    = (m: unknown): m is Bool =>
+      $(m, isTaggedRecord) &&(
+        $(m, _BoolADT.is[TrueT]) || $(m, _BoolADT.is[FalseT]) )
 
   type fn_on_bool
     =  (m: Bool)
     => any
   /** Use this as a template */
   export const fn_on_bool: fn_on_bool
-    = cond(
-    { [FALSE]: constant('any output')
-    , [TRUE]: constant('any output')
-    , })
+    = matchBool({
+      [FalseT]: constant('any output'),
+      [TrueT]: constant('any output') })
 }

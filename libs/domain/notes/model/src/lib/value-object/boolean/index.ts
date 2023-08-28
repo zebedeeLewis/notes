@@ -1,13 +1,12 @@
-import {Model} from './model'
-import { Operator } from './operators'
+import {model} from './model'
+import { operator } from './operators'
 
-export import FALSE = Model.FALSE
-export import TRUE = Model.TRUE
+export import Bool = model.Bool
+export import False = model.False
+export import FalseT = model.FalseT
+export import TrueT = model.TrueT
+export import True = model.True
 
-export import Bool = Model.Bool
-export import False = Model.False
-export import True = Model.True
-
-export import boolCond = Operator.cond
-export import isBool = Operator.isBool
-export import fn_on_bool = Operator.fn_on_bool
+export import matchBool = operator.matchBool
+export import isBool = operator.isBool
+export import fn_on_bool = operator.fn_on_bool

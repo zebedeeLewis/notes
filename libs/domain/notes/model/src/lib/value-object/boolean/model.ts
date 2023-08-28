@@ -1,22 +1,21 @@
-import {ImmutableModel} from '@notes/utils/immutable-model'
+import
+{ TaggedRecord
+, TAG_PROP
+, mkFactory
+, } from '@notes/utils/tagged-record'
 
-import TaggedModel = ImmutableModel.TaggedModel
-import factory = ImmutableModel.factory
-
-export module Model {
-  export const TRUE = '_True'
-  export type TRUE = typeof TRUE
+export module model {
+  export const TrueT = '_True'
+  export type TrueT = typeof TrueT
   
-  export interface True extends TaggedModel<typeof TRUE>{}
-  export const True: True = factory<TRUE, True>(
-    {[ImmutableModel.Tag]: TRUE})({})
+  export interface True extends TaggedRecord<TrueT>{}
+  export const True: True = mkFactory<True>({[TAG_PROP]: TrueT})({})
 
-  export const FALSE = '_False'
-  export type FALSE = typeof FALSE
+  export const FalseT = '_False'
+  export type FalseT = typeof FalseT
   
-  export interface False extends TaggedModel<typeof FALSE>{}
-  export const False: False = factory<FALSE, False>(
-    {[ImmutableModel.Tag]: FALSE})({})
+  export interface False extends TaggedRecord<FalseT>{}
+  export const False: False = mkFactory<False>({[TAG_PROP]: FalseT})({})
   
   /**
    * Bool is one of:

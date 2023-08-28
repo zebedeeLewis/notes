@@ -1,28 +1,29 @@
 import { constant } from 'fp-ts/function'
 import { it_ } from '@notes/utils/test'
-import {ImmutableModel} from '@notes/utils/immutable-model'
-import { Operator } from './operators'
-import { Model } from './model'
+import
+{ TAG_PROP
+, TaggedRecord
+, mkFactory
+, _tagged_record_examples
+, } from '@notes/utils/tagged-record'
+import { operator } from './operators'
+import { model } from './model'
 
-import FALSE = Model.FALSE
-import TRUE = Model.TRUE
+import FalseT = model.FalseT
+import TrueT = model.TrueT
 
-import TaggedModel = ImmutableModel.TaggedModel
-import Bool = Model.Bool
-import True = Model.True
-import False = Model.False
+import Bool = model.Bool
+import True = model.True
+import False = model.False
 
-import factory = ImmutableModel.factory
-import cond = Operator.cond
-import isBool = Operator.isBool
+import matchBool = operator.matchBool
+import isBool = operator.isBool
+import Person = _tagged_record_examples.Person
+
+const dorothy = Person({})
 
 describe('Bool', ()=>{
   describe('isBool()', ()=>{
-    interface R extends TaggedModel<'r'>{}
-    const R: R = {[ImmutableModel.Tag]: 'r'}
-    const RandomModel = factory<'r',R>(
-      {[ImmutableModel.Tag]: 'r'})({})
-
     describe('it should produce false if `m` is not a Bool',()=>{
       test.each`
       input            | expected
@@ -33,24 +34,23 @@ describe('Bool', ()=>{
       ${null}          | ${false}
       ${undefined}     | ${false}
       ${{}}            | ${false}
-      ${RandomModel}   | ${false}
+      ${dorothy}       | ${false}
       ${False}         | ${true}
       ${True}          | ${true}
-      `('produces false for $input', ({input,expected})=>{
-        expect(isBool(input)).toBe(expected)
-      })
+      `('produces false for $input', ({input,expected})=>
+        expect(isBool(input)).toBe(expected))
     })
   })
 
-  describe('cond()', ()=>{
+  describe('matchBool()', ()=>{
     it_('compiles', ()=>{
       type exampleFn
         =  (m: Bool)
         => number|string
       const exampleFn: exampleFn
-        = cond(
-        { [TRUE]: constant(1)
-        , [FALSE]: constant('1')
+        = matchBool(
+        { [TrueT]: constant(1)
+        , [FalseT]: constant('1')
         , })
       
       const expected = 1
