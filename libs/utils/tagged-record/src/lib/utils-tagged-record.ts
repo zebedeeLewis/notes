@@ -89,28 +89,6 @@ export module tagged_record {
       && $(m, isPlainObject)
       && $(m, has(TAG_PROP)))
 
-  /** example usage.
-   *  Note: this namespace should only be used to guide development
-   *  and in tests. It should not be used by any production code */
-  export namespace examples {
-    export interface Ork extends TaggedRecord<'creature/Ork'>
-       { sourceRace: GetTag<Person> }
-    export const ORK_DEFAULTS: Ork = {
-       [TAG_PROP]: 'creature/Ork', sourceRace: 'creature/Person'}
-    export const Ork: Factory<Ork> = mkFactory(ORK_DEFAULTS)
-
-    export interface Elf extends TaggedRecord<'creature/Elf'>
-       { element: 'earth'|'wind'|'fire'|'water' }
-    export const ELF_DEFAULTS: Elf = {
-       [TAG_PROP]: 'creature/Elf', element: 'fire' }
-    export const Elf: Factory<Elf> = mkFactory(ELF_DEFAULTS)
-
-    export interface Person extends TaggedRecord<'creature/Person'>
-      { name: string, age: number }
-    export const PERSON_DEFAULTS: Person
-      = {[TAG_PROP]: 'creature/Person', name: 'dorothy', age: 32}
-    export const Person: Factory<Person> = mkFactory(PERSON_DEFAULTS)
-  }
 }
 
 export module accessors {
@@ -194,21 +172,7 @@ export module accessors {
           , [`${String(prop)}As`]: bind(lense.set, lense)
           , [`${String(prop)}Map`]: bind(lense.modify, lense)
           , }
-        }
-      ))
-
-  /** example usage.
-   *  Note: this namespace should only be used to guide development
-   *  and in tests. It should not be used by any production code */
-  export namespace examples {
-    import Person = tagged_record.examples.Person
-    import Ork = tagged_record.examples.Ork
-    import Elf = tagged_record.examples.Elf
-
-    export const personAttr: Accessors<Person> = Accessors(Person({}))
-    export const orkAttr: Accessors<Ork> = Accessors(Ork({}))
-    export const elfAttr: Accessors<Elf> = Accessors(Elf({}))
-  }
+        } ))
 }
 
 export module utils {
@@ -237,7 +201,7 @@ export module utils {
    *   , 'creature/Ork': (m:Ork)=>'string'
    *   , }
    * ```
-   * @see {@link examples.st}
+   * @see {@link examples.utils.st}
    */
   export type TagToFunctionMap<M extends TaggedRecord<GetTag<M>>, R> =
     { [Tag in M[TAG_PROP]]:
@@ -287,11 +251,55 @@ export module utils {
     => (m: M) => DeduceReturnType<T>
   export const match: match
     = () => map => m => map[m[TAG_PROP]](m)
+}
 
-  export namespace examples {
-    import Elf = tagged_record.examples.Elf
-    import Ork = tagged_record.examples.Ork
-    import Person = tagged_record.examples.Person
+/** 
+ *  Note: this module should only be used to guide development
+ *  and in tests. It should not be used by any production code
+ */
+export module examples {
+  export namespace _tagged_record {
+    import TaggedRecord = tagged_record.TaggedRecord
+    import TAG_PROP = tagged_record.TAG_PROP
+    import GetTag = tagged_record.GetTag
+    import Factory = tagged_record.Factory
+    import mkFactory = tagged_record.mkFactory
+
+    export interface Ork extends TaggedRecord<'creature/Ork'>
+       { sourceRace: GetTag<Person> }
+    export const ORK_DEFAULTS: Ork = {
+       [TAG_PROP]: 'creature/Ork', sourceRace: 'creature/Person'}
+    export const Ork: Factory<Ork> = mkFactory(ORK_DEFAULTS)
+
+    export interface Elf extends TaggedRecord<'creature/Elf'>
+       { element: 'earth'|'wind'|'fire'|'water' }
+    export const ELF_DEFAULTS: Elf = {
+       [TAG_PROP]: 'creature/Elf', element: 'fire' }
+    export const Elf: Factory<Elf> = mkFactory(ELF_DEFAULTS)
+
+    export interface Person extends TaggedRecord<'creature/Person'>
+      { name: string, age: number }
+    export const PERSON_DEFAULTS: Person
+      = {[TAG_PROP]: 'creature/Person', name: 'dorothy', age: 32}
+    export const Person: Factory<Person> = mkFactory(PERSON_DEFAULTS)
+  }
+
+  export namespace _accessors {
+    import Accessors = accessors.Accessors
+    import Person = _tagged_record.Person
+    import Ork = _tagged_record.Ork
+    import Elf = _tagged_record.Elf
+
+    export const personAttr: Accessors<Person> = Accessors(Person({}))
+    export const orkAttr: Accessors<Ork> = Accessors(Ork({}))
+    export const elfAttr: Accessors<Elf> = Accessors(Elf({}))
+  }
+
+  export namespace _utils {
+    import TagToFunctionMap = utils.TagToFunctionMap
+    import Elf = _tagged_record.Elf
+    import Ork = _tagged_record.Ork
+    import Person = _tagged_record.Person
 
     export type Creature
       = Elf

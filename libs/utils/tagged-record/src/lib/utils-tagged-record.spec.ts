@@ -1,21 +1,25 @@
 import { pipe as $, flow as _ } from 'fp-ts/function'
 import { has } from 'ramda'
-import { given, it_ } from '@notes/utils/test'
-import { tagged_record, accessors, utils } from './utils-tagged-record'
+import
+{ tagged_record
+, accessors
+, utils
+, examples
+, } from './utils-tagged-record'
 
 import mkFactory = tagged_record.mkFactory
 import isTaggedRecord = tagged_record.isTaggedRecord
 
-import D = tagged_record.examples.PERSON_DEFAULTS
-import M = tagged_record.examples.Person
-import Ork = tagged_record.examples.Ork
-import Elf = tagged_record.examples.Elf
+import D = examples._tagged_record.PERSON_DEFAULTS
+import M = examples._tagged_record.Person
+import Ork = examples._tagged_record.Ork
+import Elf = examples._tagged_record.Elf
 import Accessors = accessors.Accessors
-import personAttr = accessors.examples.personAttr
-import elfAttr = accessors.examples.elfAttr
-import orkAttr = accessors.examples.orkAttr
+import personAttr = examples._accessors.personAttr
+import elfAttr = examples._accessors.elfAttr
+import orkAttr = examples._accessors.orkAttr
 
-import U = utils.examples.Creature
+import U = examples._utils.Creature
 import match = utils.match
 
 describe('tagged_record', () => {

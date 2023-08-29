@@ -1,4 +1,9 @@
-import { tagged_record, accessors, utils } from './lib/utils-tagged-record'
+import
+{ tagged_record
+, accessors
+, utils
+, examples
+, } from './lib/utils-tagged-record'
 
 export import TAG_PROP = tagged_record.TAG_PROP
 
@@ -13,6 +18,6 @@ export import match = utils.match
 export import mkFactory = tagged_record.mkFactory
 export import isTaggedRecord = tagged_record.isTaggedRecord
 
-export import _tagged_record_examples = tagged_record.examples
-export import _accessors_examples = accessors.examples
-export import _utils_examples = utils.examples
+export import _tagged_record_examples = examples._tagged_record
+export import _accessors_examples = examples._accessors
+export import _utils_examples = examples._utils
