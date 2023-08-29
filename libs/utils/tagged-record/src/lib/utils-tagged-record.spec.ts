@@ -1,20 +1,27 @@
-import { pipe as $ } from 'fp-ts/function'
+import { pipe as $, flow as _ } from 'fp-ts/function'
 import { has } from 'ramda'
-import { tagged_record, accessors } from './utils-tagged-record'
+import { given, it_ } from '@notes/utils/test'
+import { tagged_record, accessors, utils } from './utils-tagged-record'
 
 import mkFactory = tagged_record.mkFactory
 import isTaggedRecord = tagged_record.isTaggedRecord
 
-import PERSON_DEFAULTS = tagged_record.examples.PERSON_DEFAULTS
-import Person = tagged_record.examples.Person
+import D = tagged_record.examples.PERSON_DEFAULTS
+import M = tagged_record.examples.Person
+import Ork = tagged_record.examples.Ork
+import Elf = tagged_record.examples.Elf
 import Accessors = accessors.Accessors
+import personAttr = accessors.examples.personAttr
+import elfAttr = accessors.examples.elfAttr
+import orkAttr = accessors.examples.orkAttr
+
+import U = utils.examples.Creature
+import match = utils.match
 
 describe('tagged_record', () => {
   describe('mkFactory<M>(D)',()=>{
     describe('makes a factory `F(i)` that produces instances of `M`',()=>{
-      type M = Person
-      const D = PERSON_DEFAULTS
-      const F = mkFactory<M>(PERSON_DEFAULTS)
+      const F = mkFactory<M>(D)
 
       describe('any attribute omitted from `i` gets assigned a '
               +'default value from `D`',()=>{
@@ -54,10 +61,7 @@ describe('accessors',()=>{
   describe('Accessors<M>(m)',()=>{
     describe('makes an Accessors object `A` for TaggedRecords '
             +'of type `M` where:', ()=>{
-      type M = Person
-      const D = PERSON_DEFAULTS
-      const F = mkFactory<M>(PERSON_DEFAULTS)
-      const A: Accessors<M> = Accessors(F({}))
+      const A: Accessors<M> = Accessors(M({}))
 
       // assumes that all attributes of `M` are either
       // strings or numbers
@@ -67,7 +71,7 @@ describe('accessors',()=>{
       describe('a Getter named `propName` exist on `A` for each property '
               +'`propName` of `M`',()=>{
 
-        test.each(Object.keys(F({})))('D.%s', (propName)=>{
+        test.each(Object.keys(M({})))('D.%s', (propName)=>{
           expect($(A, has(propName))).toBe(true)
           expect($(D, A[propName])).toEqual(D[propName])
         })
@@ -75,7 +79,7 @@ describe('accessors',()=>{
       describe('a Setter named `${propName}As` exist on `A` for each '
               +'property `propName` of `M`',()=>{
 
-        test.each(Object.keys(F({})))('D.%sAs', (propName)=>{
+        test.each(Object.keys(M({})))('D.%sAs', (propName)=>{
           const setterName = `${propName}As`
 
           let actual = $(A, has(setterName))
@@ -91,7 +95,7 @@ describe('accessors',()=>{
       describe('a Updater named `${propName}Map` exist on `A` for each '
               +'property `propName` of `M`',()=>{
 
-        test.each(Object.keys(F({})))('D.%sMap', (propName)=>{
+        test.each(Object.keys(M({})))('D.%sMap', (propName)=>{
           const updaterName = `${propName}Map`
 
           let actual = $(A, has(updaterName))
@@ -103,6 +107,29 @@ describe('accessors',()=>{
 
           expect(actual).toEqual(expected)
         })
+      })
+    })
+  })
+})
+
+describe('utils',()=>{
+  describe('match<U>()',()=>{
+    describe('matches a TaggedRecord `m` by its "tag", to its '
+            +'corresponding branch in the TagToFunctionMap `mm`',()=>{
+
+      test.each([
+        [Ork({sourceRace: 'creature/Person'}), 'creature/Person'],
+        [Elf({element: 'fire'}), 'fire'],
+        [M({name: 'john'}), 'john'],
+      ])('%o -> %s',(m, expected)=>{
+        const actual = $(
+          m,
+          match<U>()({
+            'creature/Person': personAttr.name,
+            'creature/Elf': elfAttr.element,
+            'creature/Ork': orkAttr.sourceRace }))
+
+        expect(actual).toBe(expected)
       })
     })
   })

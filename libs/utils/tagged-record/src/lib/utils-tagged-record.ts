@@ -4,10 +4,11 @@ import
 , unsafeCoerce
 , } from 'fp-ts/function'
 import { reduce } from 'fp-ts/Array'
-import { and, bind, has, isNil, isNotNil } from 'ramda'
+import { bind, has, isNotNil } from 'ramda'
 import { isPlainObject } from 'ramda-extension'
 import { Lens } from 'monocle-ts'
 import { ReadonlyRecord } from 'fp-ts/lib/ReadonlyRecord'
+import { Refinement } from 'fp-ts/lib/Refinement'
 
 export module tagged_record {
   export const TAG_PROP = '_tag' as const
@@ -48,7 +49,7 @@ export module tagged_record {
    * ```
    * @see {@link examples.Person}
    */
-  export interface TaggedRecord<T> extends ReadonlyRecord<TAG_PROP, T>{}
+  export interface TaggedRecord<T extends string> extends ReadonlyRecord<TAG_PROP, T>{}
 
   /**
    * Create a TaggedRecord of type `M` from the partial `P` which
@@ -86,7 +87,7 @@ export module tagged_record {
     = <M extends TaggedRecord<GetTag<M>>>(m: unknown): m is M => (
          $(m, isNotNil)
       && $(m, isPlainObject)
-      && $(m, has('_tag')))
+      && $(m, has(TAG_PROP)))
 
   /** example usage.
    *  Note: this namespace should only be used to guide development
@@ -211,6 +212,10 @@ export module accessors {
 }
 
 export module utils {
+  import TaggedRecord = tagged_record.TaggedRecord
+  import GetTag = tagged_record.GetTag
+  import TAG_PROP = tagged_record.TAG_PROP
+
   /* istanbul ignore next */
   /**
    * This function is meant to be used as a placeholder
@@ -218,5 +223,86 @@ export module utils {
    */
   export function s(_s: any): (...a: [any]) => any {
     return undefined
+  }
+
+  /**
+   * interpret as a mapping b/w the TAG_PROP of a TaggedRecord `M`, and a
+   * function from `M`->`R`. 
+   *
+   * @example
+   * ```
+   * const st: TagToFunctionMap<Creature, string|boolean|number> =
+   *   { 'creature/Elf': (m:Elf)=>1
+   *   , 'creature/Person': (m:Person)=>true
+   *   , 'creature/Ork': (m:Ork)=>'string'
+   *   , }
+   * ```
+   * @see {@link examples.st}
+   */
+  export type TagToFunctionMap<M extends TaggedRecord<GetTag<M>>, R> =
+    { [Tag in M[TAG_PROP]]:
+        M extends {[TAG_PROP]: Tag}
+          ? (v: M) => R
+          : never
+    ; }
+
+  export type DeduceReturnType<C> =
+    C extends TagToFunctionMap<any, infer R>
+      ? R
+      : never
+
+  /**
+   * produce the result of the branch that matches the `TAG_PROP` of the
+   * given TaggedRecord.
+   *
+   * Note:
+   *   Notice that the first parameter to this curried function is nil.
+   *   This hack enables us to infer the return type of the function as
+   *   a union of all branches return type.
+   *
+   * @example
+   * ```
+   * let actual = $(
+   *   Elf({element: 'water'}),
+   *   match<Ceature>()({
+   *     'creature/Elf': _(elfAttr.element),
+   *     'creature/Ork': _(orkAttr.sourceRace),
+   *     'creature/Person': _(personAttr.name) }))
+   *
+   * expect(actual).toBe('water')
+   *
+   * let actual = $(
+   *   Ork({}),
+   *   match<Ceature>()({
+   *     'creature/Elf': _(elfAttr.element),
+   *     'creature/Ork': constant('ugly'),
+   *     'creature/Person': _(personAttr.name) }))
+   *
+   * expect(actual).toBe('ugly')
+   * ```
+   */
+  type match
+    =  <M extends TaggedRecord<GetTag<M>>>()
+    => <T extends TagToFunctionMap<M, DeduceReturnType<T>>>(map: T)
+    => (m: M) => DeduceReturnType<T>
+  export const match: match
+    = () => map => m => map[m[TAG_PROP]](m)
+
+  export namespace examples {
+    import Elf = tagged_record.examples.Elf
+    import Ork = tagged_record.examples.Ork
+    import Person = tagged_record.examples.Person
+
+    export type Creature
+      = Elf
+      | Ork
+      | Person
+
+    /* istanbul ignore next */
+    export const st: TagToFunctionMap<Creature, string|boolean|number> =
+      { 'creature/Elf': _=>1
+      , 'creature/Person': _=>true
+      , 'creature/Ork': _=>'string'
+      , }
   }
 }

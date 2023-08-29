@@ -7,39 +7,35 @@ import
 { Either
 , map as mapE
 , chainW as chainEW
-, fromPredicate as fromPredicateE
+, left as leftE
+, altW as altEW
 , } from 'fp-ts/lib/Either'
 import { equals } from 'ramda'
-import { makeADT, ADT, ofType } from '@morphic-ts/adt'
 import
-{ TAG_PROP
-, Accessors
+{ Accessors
 , s
 , isTaggedRecord
 , } from '@notes/utils/tagged-record'
 import { model } from './model'
 import { Failure} from './failure'
 
-import NotStringT = Failure.NotStringT
-import NotUUIDv4T = Failure.NotUUIDv4T
 import TAG = model.TAG
 
 import IdFailure = Failure.IdFailure
 import NotString = Failure.NotString
 import NotUUIDv4 = Failure.NotUUIDv4
 import Id = model.Id
+import attr = model.attr
 
-import isString = model.isString
-import isUUIDv4 = model.isUUIDv4
+import isString = model.constraints.isString
+import isUUIDv4 = model.constraints.isUUIDv4
 
 export module operator {
-  export const attr: Accessors<Id> = Accessors(Id())
 
   /** Id value type guard */
   export const isId
     = (m: unknown): m is Id => 
       $(m, isTaggedRecord ) && $(m, attr._tag, equals(TAG))
-
 
   export type createId
     =  (s: string)
@@ -64,52 +60,7 @@ export module operator {
    * */
   export const createId: createId
     = _(
-    fromPredicateE(isString, constant(NotString)),
-    chainEW(fromPredicateE(isUUIDv4, constant(NotUUIDv4))),
+    _(isString, altEW($(NotString, leftE, constant))),
+    chainEW(_(isUUIDv4, altEW($(NotUUIDv4, leftE, constant)))),
     mapE(Id) )
-
-  type fn_on_id
-    = (m: Id)
-    => any
-  /** This is a template */
-  /* istanbul ignore next */
-  export const fn_on_id: fn_on_id
-    = m => s`...`( $(m, attr.value) )
-
-  const _FailureADT: ADT<IdFailure, TAG_PROP>
-    = makeADT(TAG_PROP)(
-    { [NotStringT]: ofType<NotString>()
-    , [NotUUIDv4T]: ofType<NotUUIDv4>()
-    , })
-
-  /**
-   * produce the result of the branch that matches the given
-   * failure condition.
-   *
-   * @example
-   * let result = $(
-   *   NotUUIDv4,
-   *   matchFailure({
-   *     [NotUUIDv4T]: ()=>'the string must be a UUIDv4',
-   *     [NotStringT]: ()=>'it must be a string'}))
-   *
-   * expect(result).toBe('the string must be a UUIDv4')
-   *
-   * result = $(
-   *   NotString,
-   *   matchFailure({
-   *     [NotUUIDv4T]: ()=>2,
-   *     [NotStringT]: ()=>1}))
-   *
-   * expect(result).toBe(1)
-   */
-  export const matchFailure: typeof _FailureADT.match
-    = _FailureADT.match
-
-  /** IdFailure value type guard */
-  export const isIdFailure
-    = (m: unknown): m is IdFailure => 
-      $(m, isTaggedRecord) && (
-        $(m, _FailureADT.is[NotStringT]) ||
-        $(m, _FailureADT.is[NotUUIDv4T]) )
 }
